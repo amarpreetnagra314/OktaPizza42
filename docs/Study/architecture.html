@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pizza 42 — Auth0 Architecture & Design Rationale</title>
+<style>
+  @page { size: Letter; margin: 0.75in; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #222;
+    line-height: 1.5;
+    font-size: 11pt;
+    max-width: 7in;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22pt; margin-bottom: 0.1in; border-bottom: 2px solid #d63384; padding-bottom: 4px; }
+  h2 { font-size: 14pt; margin-top: 0.3in; color: #d63384; page-break-after: avoid; }
+  h3 { font-size: 12pt; margin-top: 0.2in; page-break-after: avoid; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9.5pt; }
+  pre { background: #f4f4f4; padding: 10px 12px; border-radius: 4px; overflow-x: auto; page-break-inside: avoid; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; page-break-inside: avoid; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  th { background: #fafafa; font-weight: 600; }
+  .meta { color: #666; font-size: 10pt; }
+  ul { margin: 4px 0 8px 0; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .callout {
+    background: #fff8e1;
+    border-left: 3px solid #f0c000;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 10.5pt;
+    page-break-inside: avoid;
+  }
+  .ko { color: #b00; font-weight: 600; }
+  .ok { color: #0a0; font-weight: 600; }
+  .pill { display: inline-block; padding: 1px 6px; border-radius: 10px; background: #eef; font-size: 9pt; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Pizza 42 — Auth0 Architecture &amp; Design Rationale</h1>
+<p class="meta">CIAM Specialist Tech Challenge — implementation reference and "why we picked this" guide.</p>
+
+<h2>1. Auth0 components used</h2>
+
+<table>
+  <tr><th>Component</th><th>Type</th><th>Purpose</th></tr>
+  <tr>
+    <td><b>Pizza 42</b></td>
+    <td>Single Page Application (SPA)</td>
+    <td>The React frontend customers interact with. Initiates Universal Login, receives ID/access tokens, calls the backend API on behalf of the user.</td>
+  </tr>
+  <tr>
+    <td><b>Pizza 42 API</b></td>
+    <td>Custom API (Resource Server)</td>
+    <td>Logical representation of our backend in Auth0. Defines the audience (<code>https://pizza42-api</code>) and the scopes the API protects. Auth0 issues access tokens bound to this audience.</td>
+  </tr>
+  <tr>
+    <td><b>Pizza 42 Backend</b></td>
+    <td>Machine-to-Machine (M2M) application</td>
+    <td>Used by the serverless function to call the Auth0 Management API (read user, write <code>user_metadata</code>). Holds a client secret that lives only on the server.</td>
+  </tr>
+  <tr>
+    <td><b>Google Social Connection</b></td>
+    <td>Identity Provider</td>
+    <td>One-click signup/login. Pre-verified email reduces friction (no verification email needed).</td>
+  </tr>
+  <tr>
+    <td><b>Database Connection</b></td>
+    <td>Identity Provider</td>
+    <td>Email/password signup + Passkeys. Auth0 stores credentials so Pizza 42 never has to.</td>
+  </tr>
+  <tr>
+    <td><b>Post-Login Action</b></td>
+    <td>Auth0 Action</td>
+    <td>Runs on every successful login. Copies <code>user_metadata.orders</code> into the ID token as the custom claim <code>https://pizza42.com/orders</code>.</td>
+  </tr>
+</table>
+
+<h2>2. OAuth 2.0 grants — what we chose and what we rejected</h2>
+
+<p>OAuth 2.0 defines several "grants" (a.k.a. flows). Each one is a recipe for how an app obtains a token. Picking the right one is the single most important security decision in an OAuth deployment.</p>
+
+<h3>2.1 Authorization Code with PKCE <span class="ok">✓ used by the SPA</span></h3>
+<table>
+  <tr><th>Who</th><td>Pizza 42 SPA → Auth0</td></tr>
+  <tr><th>How it works</th><td>
+    Browser generates a random <i>code verifier</i> + SHA-256 <i>code challenge</i>. It redirects to Auth0 with the challenge. After login, Auth0 sends back an <i>authorization code</i> in the URL. The browser then POSTs that code + the original verifier to Auth0's token endpoint to redeem it for tokens.
+  </td></tr>
+  <tr><th>Why this one</th><td>
+    <ul>
+      <li><b>Safe for public clients.</b> SPAs cannot keep a client secret — anyone can view the JS. PKCE replaces the secret with a one-time crypto challenge generated per login, so even if an attacker intercepts the auth code, they can't exchange it without the verifier (which never leaves the browser).</li>
+      <li><b>Tokens never appear in URLs.</b> Only the short-lived auth code is in the URL. The actual ID/access tokens come back in the body of the token endpoint response, not in browser history or referer headers.</li>
+      <li><b>Current OAuth 2.1 / IETF best practice.</b> RFC 8252 and the OAuth 2.0 Browser-Based Apps BCP both mandate Auth Code + PKCE for SPAs.</li>
+    </ul>
+  </td></tr>
+  <tr><th>Tokens received</th><td>ID token (who) + access token (what they can do at the API). Optionally a refresh token.</td></tr>
+</table>
+
+<h3>2.2 Client Credentials <span class="ok">✓ used by the backend</span></h3>
+<table>
+  <tr><th>Who</th><td>Pizza 42 Backend (M2M) → Auth0 Management API</td></tr>
+  <tr><th>How it works</th><td>Backend POSTs its <code>client_id</code> + <code>client_secret</code> to Auth0's token endpoint and gets back an access token for the Management API.</td></tr>
+  <tr><th>Why this one</th><td>
+    <ul>
+      <li><b>No user is involved.</b> The backend is acting as Pizza 42 itself to read/write user records.</li>
+      <li><b>Server can safely hold a secret.</b> Unlike a SPA, the Vercel function runtime is private.</li>
+      <li><b>Required by the Auth0 Management API for server-to-server calls.</b></li>
+    </ul>
+  </td></tr>
+</table>
+
+<h3>2.3 Implicit Grant <span class="ko">✗ rejected</span></h3>
+<ul>
+  <li><b>Deprecated.</b> Returned tokens directly in the URL fragment after login — they ended up in browser history, server access logs, and referer headers.</li>
+  <li><b>No refresh token possible</b> (security guard rail), so apps had to re-redirect users every hour.</li>
+  <li><b>No PKCE-equivalent protection</b>, so a malicious browser extension or man-in-the-middle could steal tokens trivially.</li>
+  <li>The IETF actively recommends against using it as of 2019. Auth Code + PKCE replaced it entirely.</li>
+</ul>
+
+<h3>2.4 Resource Owner Password Credentials (ROPC) <span class="ko">✗ rejected</span></h3>
+<ul>
+  <li><b>App sees the user's password.</b> The customer types their email + password into the Pizza 42 form, the app sends them to Auth0 in exchange for a token. This is exactly what we are trying to avoid — the security team's #1 ask was to <i>offload credential management</i>.</li>
+  <li><b>No SSO / no social login / no MFA prompts / no passkeys / no password reset link.</b> All those depend on Auth0 hosting the login UI.</li>
+  <li><b>OAuth 2.1 removes this grant entirely.</b> It's "legacy migration only".</li>
+  <li>Using ROPC would defeat the entire purpose of choosing Auth0.</li>
+</ul>
+
+<h3>2.5 Authorization Code <i>without</i> PKCE <span class="ko">✗ rejected</span></h3>
+<ul>
+  <li>Designed for confidential clients (servers) that can hold a secret. SPAs can't, so we'd be stuck — either embed the secret in JS (an instant credential leak) or skip the secret entirely (an authorization-code interception vulnerability).</li>
+  <li>PKCE is the correct extension for our deployment shape.</li>
+</ul>
+
+<h3>2.6 Device Code <span class="ko">✗ not applicable</span></h3>
+<ul>
+  <li>Designed for input-constrained devices (smart TVs, CLI tools) where typing a password is awkward. Pizza 42 is a web app with a normal keyboard — wrong tool.</li>
+</ul>
+
+<h3>2.7 Refresh Token grant <span class="ok">✓ Enabled with rotation</span></h3>
+<ul>
+  <li><b>Used by the SPA</b> (via <code>useRefreshTokens={true}</code> in <code>main.jsx</code>) to silently obtain a fresh access + ID token without re-prompting the user. Critical for the focus-listener silent renew to work reliably across Chrome, Safari, and Brave.</li>
+  <li><b>Why we chose refresh tokens over iframe silent renew:</b> the iframe approach relies on the Auth0 SSO cookie flowing as a third-party cookie, which modern browsers increasingly block. Refresh tokens use a back-channel POST to <code>/oauth/token</code> — no cookies involved, works everywhere.</li>
+  <li><b>Rotation + reuse detection:</b> each refresh issues a new refresh token and invalidates the previous one. If Auth0 ever sees the old refresh token reused, the entire token family is revoked (breach signal). Tenant-level setting.</li>
+  <li><b>Requires "Allow Offline Access"</b> on the API record — enabled on the Pizza 42 API in Auth0.</li>
+  <li><b>Not used by the M2M app.</b> The M2M Backend uses Client Credentials only — there's no user session to refresh. It re-acquires a Mgmt API token directly when its cached token nears expiry.</li>
+</ul>
+
+<div class="callout">
+<b>Why not session cookies + a traditional login form?</b> That would mean Pizza 42 handles passwords directly — exactly the liability the security team wants to offload. Auth0 + Universal Login + OAuth removes us from PCI/credential-storage scope entirely.
+</div>
+
+<h2>3. Universal Login vs. Embedded Login</h2>
+<table>
+  <tr><th></th><th>Universal Login (used)</th><th>Embedded Login (rejected)</th></tr>
+  <tr><td>Where the credential form lives</td><td>Auth0's domain (<code>apnagra.us.auth0.com</code>)</td><td>Inside the Pizza 42 SPA</td></tr>
+  <tr><td>Pizza 42 ever sees the password</td><td>No</td><td>Yes</td></tr>
+  <tr><td>Social IdPs / MFA / passkeys / password reset</td><td>Free, just toggle</td><td>Each one requires custom integration</td></tr>
+  <tr><td>Phishing / cross-origin risk</td><td>Lower — single origin to inspect</td><td>Higher — each app can be tampered with</td></tr>
+  <tr><td>Branding</td><td>Customizable (logo, colors, custom domain)</td><td>Fully owned</td></tr>
+</table>
+<p>Universal Login is Auth0's recommended default. The small loss of branding control is more than offset by the security and UX wins.</p>
+
+<h2>4. End-to-end token flow</h2>
+<div class="callout">
+1. User clicks <b>Log in</b> → SDK redirects to <code>https://apnagra.us.auth0.com/authorize?...&amp;code_challenge=...</code><br>
+2. Universal Login shows the form (or auto-redirects to Google if chosen).<br>
+3. After successful auth, Auth0 redirects back to <code>http://localhost:3000/?code=...&amp;state=...</code><br>
+4. SDK POSTs the code + PKCE verifier to <code>/oauth/token</code>, receives ID + access tokens.<br>
+5. SPA calls <code>POST /api/orders</code> with <code>Authorization: Bearer &lt;access_token&gt;</code>.<br>
+6. Backend verifies signature (JWKS), issuer, audience, and presence of <code>create:orders</code> scope.<br>
+7. Backend exchanges its M2M client_id/secret for a Mgmt API access token (Client Credentials).<br>
+8. Backend reads user → confirms <code>email_verified</code> → PATCHes <code>user_metadata.orders</code>.<br>
+9. On next login, the Post-Login Action injects <code>user_metadata.orders</code> into the ID token as <code>https://pizza42.com/orders</code>.
+</div>
+
+<h2>5. Why a separate Machine-to-Machine application?</h2>
+<ul>
+  <li><b>Credential isolation.</b> The SPA cannot hold a client secret safely. The M2M app keeps the Management API secret on the server, never shipped to the browser.</li>
+  <li><b>Different trust level.</b> The SPA acts on behalf of one user with that user's scopes. The M2M app acts as Pizza 42 itself with admin scopes. Mixing these violates least-privilege.</li>
+  <li><b>Different grant.</b> SPA uses Auth Code + PKCE (user present). M2M uses Client Credentials (no user). They cannot share an application record.</li>
+  <li><b>Scope of authority.</b> Management API permissions (<code>read:users</code>, <code>update:users</code>, <code>update:users_app_metadata</code>) are powerful — leaking them in the browser would let an attacker modify any user.</li>
+  <li><b>Audit clarity.</b> Auth0 logs show which app did which action; a single mixed app would muddy investigations.</li>
+</ul>
+
+<h2>6. The three token types and what we do with each</h2>
+<table>
+  <tr><th>Token</th><th>Format</th><th>Who consumes it</th><th>Used here for</th></tr>
+  <tr>
+    <td><b>ID token</b></td>
+    <td>JWT (OIDC)</td>
+    <td>The SPA (the client)</td>
+    <td>"Who is the user?" — name, email, picture, <code>email_verified</code>, and our custom <code>https://pizza42.com/orders</code> claim for the history view.</td>
+  </tr>
+  <tr>
+    <td><b>Access token</b></td>
+    <td>JWT (signed JWT, RS256)</td>
+    <td>The Pizza 42 API (backend)</td>
+    <td>"What is the user allowed to do?" — bearer credential the backend verifies and enforces <code>create:orders</code> against.</td>
+  </tr>
+  <tr>
+    <td><b>Refresh token</b></td>
+    <td>Opaque</td>
+    <td>Auth0 token endpoint</td>
+    <td>(Disabled in PoC.) Would let the SPA silently get a new access token after expiry without re-prompting.</td>
+  </tr>
+</table>
+
+<h2>7. API permissions &amp; scope enforcement — authentication vs. authorization</h2>
+
+<p>Requirement #8 demands <i>both</i> a valid token <b>and</b> a specific scope. The common shortcut is to check only that the token is valid (authentication) and skip the scope check (authorization) — that's a favorite Q&amp;A probe in identity interviews.</p>
+
+<table>
+  <tr><th></th><th>Authentication (authn)</th><th>Authorization (authz)</th></tr>
+  <tr><td>The question</td><td>"Who are you?"</td><td>"Are you allowed to do this?"</td></tr>
+  <tr><td>What we check</td><td>Signature (JWKS), issuer, audience, expiry</td><td><code>scope</code> claim contains <code>create:orders</code></td></tr>
+  <tr><td>Skipping it means</td><td>Anyone can forge a token</td><td>Any logged-in user can hit any endpoint</td></tr>
+</table>
+
+<h3>Both checks in code (api/orders.js)</h3>
+<pre>// Step 1 — AUTHENTICATION: "is this a real, current token from our tenant?"
+const { payload } = await jwtVerify(token, JWKS, {
+  issuer: `https://${AUTH0_DOMAIN}/`,
+  audience: AUTH0_AUDIENCE,
+});
+
+// Step 2 — AUTHORIZATION: "is this token allowed to do THIS operation?"
+const scopes = (payload.scope || "").split(" ");
+if (!scopes.includes("create:orders")) {
+  throw new Error("Missing required scope: create:orders");
+}</pre>
+
+<h3>The scope is wired in three places — miss any one and it's broken</h3>
+<ol>
+  <li><b>API record in Auth0</b> → Permissions tab declares <code>create:orders</code>. Without this, Auth0 won't include the scope on <i>any</i> token, no matter who asks.</li>
+  <li><b>SPA (<code>main.jsx</code>)</b> → <code>scope: "openid profile email create:orders"</code> in <code>authorizationParams</code>. Without this the SPA never asks for the scope, so it's never on the token.</li>
+  <li><b>Backend (<code>api/orders.js</code>)</b> → the explicit <code>scopes.includes("create:orders")</code> check. Without this, any valid access token — even one with no scopes — would be accepted.</li>
+</ol>
+
+<table>
+  <tr><th>Scope</th><th>Defined where</th><th>Why</th></tr>
+  <tr>
+    <td><code>create:orders</code></td>
+    <td>Pizza 42 API → Permissions tab</td>
+    <td>
+      Enforces challenge requirement #8 — only access tokens explicitly granted this permission may call <code>POST /api/orders</code>. We chose a verb-noun shape so we can grow naturally: <code>read:orders</code>, <code>cancel:orders</code>, <code>refund:orders</code>.
+    </td>
+  </tr>
+</table>
+
+<h3>Standard OIDC scopes also requested (not custom)</h3>
+<table>
+  <tr><td><code>openid</code></td><td>Required by OIDC to receive an ID token at all.</td></tr>
+  <tr><td><code>profile</code></td><td>Returns <code>name</code>, <code>nickname</code>, <code>picture</code>, etc.</td></tr>
+  <tr><td><code>email</code></td><td>Returns <code>email</code> and <code>email_verified</code> — needed for the verification gate.</td></tr>
+</table>
+
+<h3>401 is returned if the token is:</h3>
+<ul>
+  <li>missing or malformed,</li>
+  <li>not signed by our Auth0 tenant (signature fails against JWKS) — <i>authn fail</i>,</li>
+  <li>issued for a different API (wrong <code>aud</code>) — <i>authn fail</i>,</li>
+  <li>expired — <i>authn fail</i>,</li>
+  <li>or lacks <code>create:orders</code> — <i>authz fail</i>.</li>
+</ul>
+
+<h2>8. RBAC vs. plain scopes — and why we chose scopes</h2>
+<ul>
+  <li><b>Plain scopes</b> (what we have): the API declares <code>create:orders</code> as a permission, the SPA requests it, Auth0 stamps it into the access token's <code>scope</code> claim. Backend enforces.</li>
+  <li><b>RBAC</b> would mean turning on "Enable RBAC" on the API, defining roles like "customer" / "manager", assigning users to roles, and Auth0 putting their permissions into a <code>permissions</code> claim. This adds value when:
+    <ul>
+      <li>Different users get different sets of permissions (e.g. only staff can refund).</li>
+      <li>You want to manage who-can-do-what via roles instead of code.</li>
+    </ul>
+  </li>
+  <li>For this PoC every customer can place an order, so the extra layer would be ceremony without benefit. Easy to upgrade later — the backend code already checks both <code>scope</code> and <code>permissions</code> claims.</li>
+</ul>
+
+<h2>9. <code>app_metadata</code> vs <code>user_metadata</code> &mdash; right tool for each job</h2>
+
+<p>We deliberately use <i>both</i> metadata buckets, splitting data by who owns it.</p>
+
+<table>
+  <tr><th></th><th><code>app_metadata</code></th><th><code>user_metadata</code></th></tr>
+  <tr><td>What we store here</td><td>Order history (<code>orders</code>)</td><td>Marketing profile (<code>marketingProfile</code>)</td></tr>
+  <tr><td>Who owns the data</td><td>The system / Pizza 42</td><td>The user</td></tr>
+  <tr><td>Who can edit it</td><td>Backend only (via M2M)</td><td>Backend or the user themselves</td></tr>
+  <tr><td>User-self-edit scope exists?</td><td>No</td><td>Yes (<code>update:current_user_metadata</code>)</td></tr>
+  <tr><td>Why this bucket</td><td>Orders should be tamper-proof — only the kitchen creates them.</td><td>Favorite pizza, dietary prefs, marketing opt-ins are user-owned; user should be able to edit freely.</td></tr>
+</table>
+
+<ul>
+  <li><b>Defense in depth on orders.</b> Even if a future engineer adds the <code>update:current_user_metadata</code> scope to let users self-edit (e.g. saved address), order history stays safe in <code>app_metadata</code> — there's no equivalent SPA scope for it.</li>
+  <li><b>Both flow into tokens easily.</b> A single Post-Login Action with two <code>setCustomClaim()</code> calls injects both into the ID token (under namespaced claims) so the SPA can render personalized UI on first paint.</li>
+  <li><b>Production note.</b> In a real Pizza 42 the source of truth for orders would be our own database, with a thin summary mirrored to <code>app_metadata</code>. Marketing profile is small enough to live entirely in <code>user_metadata</code>.</li>
+</ul>
+
+<h2>10. Auth0 Actions — and why Rules / Hooks are dead</h2>
+<ul>
+  <li><b>Actions</b> (what we used): Auth0's current extensibility model. Runs Node code at specific points in the auth pipeline (Post-Login, Pre-Registration, Credentials-Exchange, etc.). API style: <code>api.idToken.setCustomClaim()</code>, <code>api.user.setAppMetadata()</code>, etc.</li>
+  <li><b>Rules</b> and <b>Hooks</b> are deprecated:
+    <ul>
+      <li><b>End of Life: November 18, 2026.</b> All Rules and Hooks stop executing after this date.</li>
+      <li><b>Unavailable to new tenants</b> created after October 16, 2023 — our trial tenant literally <i>cannot</i> use them.</li>
+      <li>Old API style: <code>context.idToken["..."] = orders;</code> inside a <code>function (user, context, callback)</code>.</li>
+    </ul>
+  </li>
+  <li><b>Why this matters for the interview:</b> half of the older public Pizza 42 reference repos (PFVriens, peterpostmann, etc.) still demonstrate the Rules pattern. Cribbing from them without modernizing is an instant red flag for an identity specialist role. Calling it out explicitly ("I noticed the older samples use Rules, which are EOL — I built this on Actions") signals you actually track the platform.</li>
+  <li>Why we needed any extensibility at all: Auth0 strips non-OIDC claims from tokens unless code injects them. <code>api.idToken.setCustomClaim()</code> in the Post-Login trigger is the canonical way to add <code>https://pizza42.com/orders</code>.</li>
+</ul>
+
+<table style="margin-top: 0.15in;">
+  <tr><th></th><th>Rules (deprecated)</th><th>Actions (current)</th></tr>
+  <tr><td>API style</td><td><code>context.idToken["claim"] = value</code></td><td><code>api.idToken.setCustomClaim("claim", value)</code></td></tr>
+  <tr><td>Entry point</td><td><code>function (user, context, callback)</code></td><td><code>exports.onExecutePostLogin = async (event, api)</code></td></tr>
+  <tr><td>Runtime</td><td>Sandboxed Node 12 (frozen)</td><td>Node 18 / 22, with package management</td></tr>
+  <tr><td>Versioning</td><td>None — edits go live immediately</td><td>Built-in drafts and deploy</td></tr>
+  <tr><td>Testing</td><td>None</td><td>Built-in test runner</td></tr>
+  <tr><td>Available in new tenants</td><td>No (post Oct 2023)</td><td>Yes</td></tr>
+</table>
+
+<h2>11. Custom claim namespacing</h2>
+<ul>
+  <li><b>The claim name we use:</b> <code>https://pizza42.com/orders</code> — a URI-shaped string, picked to be unique and obviously ours.</li>
+  <li><b>Why a URI:</b> Auth0 (following OIDC convention) reserves the unnamespaced short identifiers like <code>name</code>, <code>email</code>, <code>sub</code>, <code>orders</code> for standard or future use. Namespacing with a URI guarantees no collision.</li>
+  <li><b>The URI does <i>not</i> have to resolve.</b> <code>https://pizza42.com/orders</code> is never visited. It's just a globally unique string. <code>urn:pizza42:orders</code> would work equally well — convention favors HTTPS URIs.</li>
+  <li><b>The dangerous failure mode:</b> if you use a non-namespaced claim like <code>orders</code>, Auth0 <b>silently drops it</b>. No error, no warning, no log line — the Action runs successfully, the token is issued, the claim just isn't there. This is one of the most-time-burning bugs in the platform: "it works on my machine, but the claim isn't in the token."</li>
+  <li><b>How to debug a missing claim:</b> decode the ID token (jwt.io or the Debug panel in the app), confirm the claim is namespaced exactly as the SPA expects, and check Action logs in the Auth0 dashboard.</li>
+</ul>
+
+<h2>12. Email verification — why we enforce it server-side</h2>
+<ul>
+  <li>The SPA disables the "Place Order" button when <code>email_verified === false</code> — that's a UX hint.</li>
+  <li>The <b>authority is the backend.</b> A hostile client could call <code>/api/orders</code> directly with a valid access token from an unverified user. The serverless function looks up <code>email_verified</code> via the Management API and rejects with 403 if false.</li>
+  <li>We deliberately do <i>not</i> block login for unverified users (requirement #7) — they can still sign in, edit their profile, browse — they just can't order. This is good CIAM UX: don't punish users with a hard wall when a soft gate solves the same problem.</li>
+</ul>
+
+<h3>The mid-session staleness problem &mdash; and the focus-listener fix</h3>
+<p>Because <code>email_verified</code> is baked into the ID token at login time, the SPA's cached token still says <code>false</code> immediately after the user clicks the verification link in another tab. A simple page refresh doesn't fix it &mdash; the SDK just rehydrates from <code>localStorage</code>. The user would be stuck on a disabled button until they manually log out / log back in.</p>
+
+<p>Fix in <code>App.jsx</code>: register a <code>focus</code> listener that triggers a silent token renewal whenever the user returns to the tab.</p>
+
+<pre>useEffect(() =&gt; {
+  if (!isAuthenticated) return;
+  const onFocus = () =&gt; {
+    getAccessTokenSilently({ cacheMode: "off" }).catch(() =&gt; {});
+  };
+  window.addEventListener("focus", onFocus);
+  return () =&gt; window.removeEventListener("focus", onFocus);
+}, [isAuthenticated, getAccessTokenSilently]);</pre>
+
+<div class="callout">
+<b>Panel talking point — verbatim:</b><br/>
+"I added a focus listener that triggers silent re-authentication when the user returns to the tab. Auth0 issues a new ID token via a hidden iframe using the existing SSO cookie, the SDK swaps the cached token, and the UI re-renders with the current <code>email_verified</code>. The user goes from inbox → verification link → back to Pizza 42, and the button enables without any manual refresh. The backend was already always-current via the Mgmt API lookup — this is just bringing the UI freshness in line with the backend's."
+</div>
+
+<ul>
+  <li><b>Why this works:</b> <code>cacheMode: "off"</code> forces the SDK to bypass its localStorage cache and re-run silent auth against Auth0. The hidden iframe presents the existing SSO cookie, Auth0 reissues fresh tokens with the current <code>email_verified</code>, and the React tree re-renders with the new value.</li>
+  <li><b>Why <code>.catch(() =&gt; {})</code>:</b> if the user is logged out elsewhere or has a network blip, we silently ignore the failure rather than spam the console — the UI gracefully falls back to whatever was cached.</li>
+</ul>
+
+<h3>The two silent-renew transports — iframe vs. refresh tokens</h3>
+
+<p>Silent renew sounds like one thing but is actually two very different mechanisms under the hood, and which one you use determines whether this whole flow works at all.</p>
+
+<table>
+  <tr><th></th><th>Iframe silent renew</th><th>Refresh token silent renew</th></tr>
+  <tr><td>Transport</td><td>Hidden iframe → Auth0 <code>/authorize</code></td><td>Back-channel POST → Auth0 <code>/oauth/token</code></td></tr>
+  <tr><td>Depends on</td><td>Auth0 SSO cookie flowing as a <i>third-party</i> cookie</td><td>A long-lived refresh token stored client-side</td></tr>
+  <tr><td>Works in Chrome/Safari/Brave 2025+?</td><td>Increasingly blocked — third-party cookies are being phased out</td><td>Yes — no cookies involved at all</td></tr>
+  <tr><td>Requires "Allow Offline Access" on the API</td><td>No</td><td>Yes</td></tr>
+  <tr><td>Failure mode</td><td>Silent — iframe error swallowed</td><td>Explicit error from token endpoint</td></tr>
+</table>
+
+<p>In <code>main.jsx</code> we enable refresh tokens with rotation:</p>
+
+<pre>&lt;Auth0Provider
+  ...
+  cacheLocation="localstorage"
+  useRefreshTokens={true}
+  useRefreshTokensFallback={true}
+&gt;</pre>
+
+<div class="callout">
+<b>Panel talking point — verbatim:</b><br/>
+"Silent renew has two transports — iframe and refresh tokens. Iframe relies on the Auth0 SSO cookie flowing as a third-party cookie, which Chrome/Safari/Brave increasingly block. Refresh tokens are back-channel POST to the token endpoint — no cookies involved, works everywhere. I enabled refresh tokens with rotation: each refresh issues a new refresh token and revokes the old one, with reuse detection as a breach signal. The focus listener then reliably picks up the verified state across all browsers."
+</div>
+
+<h3>How often does the token actually refresh?</h3>
+<ul>
+  <li><b>On tab focus</b> (our explicit code): every time the window/tab regains focus. Browsers de-bounce focus events to once per actual focus change, so switching tabs rapidly only fires once each direction.</li>
+  <li><b>SDK auto-renewal</b> (built in): the Auth0 SDK proactively renews when the cached access token is close to expiry (default access-token lifetime is 24h for SPAs unless you change it).</li>
+  <li><b>On <code>getAccessTokenSilently()</code> calls</b>: every order request calls this. With <code>cacheMode: "on"</code> (default) it returns the cached token if still valid; <code>cacheMode: "off"</code> forces a fresh round-trip.</li>
+</ul>
+
+<p><b>Net effect:</b> on every tab focus we force a fresh round-trip; otherwise the SDK manages things based on token expiry. There's no continuous polling — refreshes are event-driven, not interval-based, which keeps Auth0 API usage low while keeping the UI feeling current.</p>
+
+<p><b>Refresh token rotation in particular:</b> each successful refresh returns a <i>new</i> refresh token and invalidates the previous one. If Auth0 ever sees the old refresh token reused, that's a strong breach signal — the entire token family is revoked and the user is forced to log in again. Adds friction in a leak scenario, which is exactly what you want.</p>
+
+<h2>13. Security summary — defense in depth</h2>
+<ul>
+  <li><b>Universal Login</b> — Auth0 hosts the credential prompt; Pizza 42 never sees passwords.</li>
+  <li><b>Auth Code + PKCE</b> — current best practice for SPAs.</li>
+  <li><b>JWT with RS256</b> — asymmetric crypto, backend verifies via JWKS, no shared secrets to leak.</li>
+  <li><b>Issuer + audience + scope + expiry + signature checks</b> — all enforced on every API request.</li>
+  <li><b>Email verification enforced server-side.</b></li>
+  <li><b>M2M client secret stored as Vercel env var</b>, never shipped to the browser.</li>
+  <li><b>Token caching</b> — the Mgmt API token is cached in memory until shortly before expiry, reducing token-endpoint traffic.</li>
+  <li><b>Built-in Auth0 protections</b> — MFA, breached password detection, bot detection, anomaly detection, brute-force protection — all toggleable with zero code changes.</li>
+</ul>
+
+<h2>14. What I'd add for a real production rollout</h2>
+<ul>
+  <li>Pizza 42's own DB as source of truth, mirroring a summary into <code>user_metadata</code>.</li>
+  <li>Refresh token rotation re-enabled for longer sessions.</li>
+  <li>MFA + breached password detection turned on.</li>
+  <li>A custom Auth0 domain (<code>auth.pizza42.com</code>) for branding and cookie scoping.</li>
+  <li>Step-up auth on higher-risk actions (e.g. adding payment, large orders).</li>
+  <li>Account linking so a user who signs up with email and later uses Google ends up as one identity, not two.</li>
+  <li>Progressive profiling via a Post-Login Action — capture marketing data (favorite pizza, delivery address) gradually instead of in one big signup form.</li>
+</ul>
+
+<h2>15. PDF requirements that are NOT production best practice</h2>
+<p class="meta">Talking thoughtfully about where the spec departs from real-world best practice is a key signal to the panel — disagreeing with the brief, when justified, is encouraged.</p>
+
+<h3>15.1 "Add order history to the ID token" (req #10)</h3>
+<ul>
+  <li><b>Anti-pattern.</b> ID tokens should be small and stable.</li>
+  <li>Tokens travel in headers/cookies — unbounded arrays bloat them fast.</li>
+  <li>Tokens contain potentially sensitive data with a 24h+ lifetime — exposing full purchase history widens the blast radius if a token leaks.</li>
+  <li>Re-fetched on every silent renewal, wasting bandwidth.</li>
+  <li><b>Better:</b> include a <i>summary</i> in the token (<code>orderCount</code>, <code>lastOrderAt</code>, <code>topItem</code>) and fetch the full list on demand via <code>GET /api/orders</code> protected by a <code>read:orders</code> scope.</li>
+</ul>
+
+<h3>15.2 "Save the order to the user's Auth0 profile" (req #9)</h3>
+<ul>
+  <li><b>Doesn't scale.</b> <code>user_metadata</code> is capped at 16 KB per user — months of orders blow through that.</li>
+  <li>Not queryable — you can't answer "what did everyone order this week?".</li>
+  <li>Couples customer data to your identity vendor (lock-in).</li>
+  <li>Management API is rate-limited; a busy hour could exhaust quotas.</li>
+  <li><b>Better:</b> own DB is source of truth. Mirror a thin summary to <code>user_metadata</code> only if needed in tokens.</li>
+</ul>
+
+<h3>15.3 Calling the Mgmt API on every order</h3>
+<ul>
+  <li>What our PoC does for simplicity. In production you'd:
+    <ul>
+      <li>Use a Post-Login Action or Auth0 webhook to update derived state in your own systems instead of round-tripping through Mgmt API on the hot path.</li>
+      <li>Cache aggressively (we already cache the M2M access token in-memory).</li>
+      <li>Batch updates where possible.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>15.4 Implicit framing of "verify email blocks ordering"</h3>
+<ul>
+  <li>PDF could be read as a client-side gate. We implemented it <b>server-side</b> in the API handler. The client-side disable is just UX — the API is the authority.</li>
+  <li>A hostile client could call <code>POST /api/orders</code> directly with a valid token from an unverified user. Only server-side enforcement closes that hole.</li>
+</ul>
+
+<h3>15.5 Audience as a URL</h3>
+<ul>
+  <li>We chose <code>https://pizza42-api</code> by convention, but the OAuth spec allows any URI. <code>urn:pizza42:api</code> is arguably cleaner because it's obviously not a resolvable endpoint and won't confuse readers.</li>
+</ul>
+
+<h2>16. Panel interview — questions to prepare for</h2>
+<p class="meta">Direct quotes / paraphrases from the recruiter call. Each one needs a 1–2 sentence answer ready to go.</p>
+
+<table>
+  <tr><th>Question</th><th>Where to find the answer</th></tr>
+  <tr>
+    <td>"Why Auth Code + PKCE, not Implicit?"</td>
+    <td>Section 2.1 + 2.3 of this doc — tokens not in URL, PKCE replaces secret, current best practice.</td>
+  </tr>
+  <tr>
+    <td>"Why a separate M2M application?"</td>
+    <td>Section 5 — credential isolation, different grant, least privilege.</td>
+  </tr>
+  <tr>
+    <td>"What about refresh tokens?"</td>
+    <td>Section 2.7 + token-types table — we're using silent iframe renewal; would re-enable with rotation in production.</td>
+  </tr>
+  <tr>
+    <td>"Back channel vs front channel?"</td>
+    <td>Front channel = browser redirects (authorize endpoint). Back channel = server-to-server (token exchange, JWKS fetch, Mgmt API calls). Tokens are issued via the back channel so they never appear in the URL.</td>
+  </tr>
+  <tr>
+    <td>"Why save orders to <code>user_metadata</code> / put them in the ID token?"</td>
+    <td>Use the critique in section 15 — be ready to disagree with the spec and explain the trade-off.</td>
+  </tr>
+  <tr>
+    <td>"How would you do progressive profiling?"</td>
+    <td>Post-Login Action that prompts for marketing data (favorite pizza, delivery zone) over multiple visits instead of in one huge signup form. Stored in <code>user_metadata</code>. Directly addresses Pizza 42 marketing team's ask.</td>
+  </tr>
+  <tr>
+    <td>"What's the GenAI angle?"</td>
+    <td>Mentioned as bonus by the recruiter. Suggest a chatbot that uses order history claim to recommend reorders, plus Auth0's emerging Auth for GenAI (delegated tool use, agent identity).</td>
+  </tr>
+  <tr>
+    <td>"What changes at 10M users?"</td>
+    <td>Move orders to own DB, derive summary into metadata only if used in tokens, custom domain for cookie scoping, refresh-token rotation, MFA conditional rules, observability via Auth0 log streams.</td>
+  </tr>
+  <tr>
+    <td>"How do you rotate the M2M client secret?"</td>
+    <td>Auth0 supports multiple credentials per M2M app — generate the new one, deploy to env vars, rotate traffic, revoke old. For higher assurance: switch M2M to private-key JWT (mTLS-style auth) instead of shared secret.</td>
+  </tr>
+  <tr>
+    <td>"What if Auth0 is down?"</td>
+    <td>Frontend gracefully degrades to read-only / cached views. JWT validation works locally as long as we cached the JWKS. New logins are blocked — there's no realistic mitigation other than a multi-IdP fallback (a bigger architectural change with its own cost).</td>
+  </tr>
+</table>
+
+<h2>17. Panel demo plan (45 minutes)</h2>
+<p class="meta">Recruiter said: 25 min demo, 10 min walkthrough, 10 min Q&A. Audience is mixed: marketing/PM stakeholders + technical engineers.</p>
+
+<h3>Slides (~5 min)</h3>
+<ol>
+  <li><b>Pizza 42 business goals</b> — security wants to offload credentials, product wants frictionless login, marketing wants enriched profiles. Map each to a Auth0 capability.</li>
+  <li><b>Architecture diagram</b> — SPA / Pizza 42 API / M2M backend / Mgmt API / Action.</li>
+  <li><b>OAuth flow</b> — front channel (redirect) vs back channel (token exchange + Mgmt API).</li>
+  <li><b>Token claims</b> — ID vs access vs (disabled) refresh; what each contains.</li>
+</ol>
+
+<h3>Live demo (~20 min)</h3>
+<ol>
+  <li>Land on hero page (logged out) — call out Universal Login button.</li>
+  <li>Sign up with email/password — show <code>email_verified: false</code> in debug payload, banner blocks ordering.</li>
+  <li>Verify email via link — refresh, banner disappears.</li>
+  <li>Place an order — show backend log (scope verified, Mgmt API patched), show success response.</li>
+  <li>Log out, log back in — order now appears in history (custom claim).</li>
+  <li>Log in via Google instead — pre-verified, one-click.</li>
+  <li>Open Auth0 dashboard — show API + scope, Post-Login Action code, user record's <code>user_metadata.orders</code>.</li>
+</ol>
+
+<h3>Walkthrough (~10 min)</h3>
+<ul>
+  <li>Tech stack: React + Vite, Vercel serverless, <code>jose</code> for JWT, Auth0 SDK.</li>
+  <li>Implementation decisions: Universal Login over embedded, scope-based authz over RBAC, M2M for Mgmt API.</li>
+  <li>What I disagreed with from the spec (section 15).</li>
+  <li>Challenges: per-app authorization config, localhost consent prompt, ID-token claim namespacing.</li>
+  <li>Production roadmap (section 14).</li>
+</ul>
+
+<h3>Q&A (~10 min)</h3>
+<p>Field questions using section 16. Don't bluff — if I don't know, say so and explain how I'd find out.</p>
+
+<h2>18. Mapping Pizza 42 business goals to Auth0 features</h2>
+<p>Useful for the business-stakeholder portion of the demo.</p>
+
+<table>
+  <tr><th>Pizza 42 ask</th><th>Auth0 capability</th><th>Where in this PoC</th></tr>
+  <tr><td>Security: offload credential management</td><td>Universal Login + Database connection</td><td>SPA never sees passwords; Auth0 hashes &amp; stores them.</td></tr>
+  <tr><td>Security: storing credentials raises liability</td><td>Auth0 is SOC 2 / ISO 27001 / GDPR-ready</td><td>Compliance burden shifted to Auth0.</td></tr>
+  <tr><td>Product: frictionless &amp; customizable login</td><td>Universal Login pages, brandable</td><td>Tenant has the Auth0 New Universal Login experience.</td></tr>
+  <tr><td>Product: turnkey password reset</td><td>Built into Universal Login</td><td>Zero app code; reduces help-desk tickets.</td></tr>
+  <tr><td>Product: social login</td><td>Google social connection</td><td>Enabled in tenant; demo shows one-click signup.</td></tr>
+  <tr><td>Product: not remember password</td><td>Passkeys (WebAuthn) + Passwordless</td><td>Enabled on database connection; key talking point.</td></tr>
+  <tr><td>Marketing: enrich customer data</td><td>Social IdP claims pre-populate name/picture/locale; marketing profile UI captures favorite item, dietary prefs, opt-ins into <code>user_metadata</code>; behavioral data accumulates in <code>app_metadata.orders</code></td><td>"Tell us about you" card writes to <code>/api/profile</code> → <code>user_metadata.marketingProfile</code>; surfaced in ID token via Post-Login Action.</td></tr>
+</table>
+
+</body>
+</html>

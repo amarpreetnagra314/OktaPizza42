@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizza 42 · Presenter Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fbf7f0;
+  --paper: #ffffff;
+  --ink: #1a1614;
+  --muted: #6b5d4f;
+  --muted-soft: #a89a87;
+  --rule: #e8dfd0;
+  --rule-soft: #f0e8d8;
+  --accent: #c4502a;
+
+  --say-bg: #edf4ee;
+  --say-border: #2d5f3f;
+  --say-ink: #1a3d28;
+
+  --watch-bg: #fbf2e3;
+  --watch-border: #b8741c;
+  --watch-ink: #6e4a0f;
+
+  --ask-bg: #e8eef5;
+  --ask-border: #1e4d7a;
+  --ask-ink: #122e4d;
+
+  --demo-bg: #f7e5e0;
+  --demo-border: #a83232;
+  --demo-ink: #5c1f1f;
+
+  --shadow-sm: 0 1px 2px rgba(26, 22, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(26, 22, 20, 0.06);
+}
+
+body.dark {
+  --bg: #1a1614;
+  --paper: #252019;
+  --ink: #f0e9dd;
+  --muted: #a89a87;
+  --muted-soft: #6b5d4f;
+  --rule: #3a322a;
+  --rule-soft: #2e2620;
+  --accent: #e07a4f;
+
+  --say-bg: #1a2e22;
+  --say-border: #5a9272;
+  --say-ink: #c8e6d2;
+
+  --watch-bg: #2e2415;
+  --watch-border: #d99540;
+  --watch-ink: #f0d99c;
+
+  --ask-bg: #1a2530;
+  --ask-border: #6090c0;
+  --ask-ink: #c8dce8;
+
+  --demo-bg: #2e1818;
+  --demo-border: #c25a5a;
+  --demo-ink: #f0c8c8;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+/* ===== SIDEBAR ===== */
+aside.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 28px 24px;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.brand {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.brand .pizza { color: var(--accent); font-style: italic; }
+
+.brand-sub {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+.timer-card {
+  background: var(--rule-soft);
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.timer-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.timer-display {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.timer-buttons { display: flex; gap: 6px; }
+.timer-btn {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  flex: 1;
+}
+.timer-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+.timer-segment {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+nav.toc { font-size: 13px; }
+
+.toc-section {
+  margin-bottom: 18px;
+}
+.toc-section-title {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.toc-list { list-style: none; padding: 0; margin: 0; }
+.toc-list li { margin: 0; }
+.toc-list a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 8px;
+  margin: 0 -8px;
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+.toc-list a:hover { background: var(--rule-soft); }
+.toc-list a.demo-link {
+  color: var(--demo-ink);
+  background: var(--demo-bg);
+  font-weight: 500;
+  margin: 6px -8px;
+  border-left: 3px solid var(--demo-border);
+}
+.toc-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ===== MAIN ===== */
+main.content {
+  padding: 48px 56px 120px;
+  max-width: 920px;
+}
+
+h1.title {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  font-size: 52px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 12px;
+}
+h1.title .accent { color: var(--accent); font-style: italic; }
+
+.subtitle {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 600px;
+  margin-bottom: 12px;
+}
+
+.meta-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: 32px 0 48px;
+  font-size: 13px;
+}
+.meta-item { display: flex; gap: 8px; align-items: baseline; }
+.meta-label { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.meta-value { font-weight: 500; }
+
+/* SECTION */
+section.section {
+  margin: 56px 0 0;
+  scroll-margin-top: 20px;
+}
+.section-header {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+  font-weight: 600;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+.section h2 {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+.section-intro {
+  color: var(--muted);
+  font-size: 16px;
+  margin-bottom: 32px;
+  max-width: 680px;
+}
+
+/* SLIDE CARDS */
+.slide-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  scroll-margin-top: 20px;
+}
+
+.slide-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+.slide-num {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--accent);
+  line-height: 1;
+  font-style: italic;
+}
+.slide-title {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 200px;
+}
+.slide-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--rule-soft);
+  padding: 4px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.lead {
+  font-size: 15px;
+  color: var(--muted);
+  font-style: italic;
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 14, "SOFT" 100;
+  margin-bottom: 16px;
+  padding-left: 14px;
+  border-left: 2px solid var(--rule);
+}
+
+.callout {
+  position: relative;
+  margin: 14px 0;
+  padding: 14px 18px 14px 20px;
+  border-left: 3px solid;
+  border-radius: 0 6px 6px 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.callout::before {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.65;
+}
+
+.callout.say {
+  background: var(--say-bg);
+  border-color: var(--say-border);
+  color: var(--say-ink);
+}
+.callout.say::before { content: "Say verbatim"; color: var(--say-ink); }
+.callout.say .quote {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 14, "SOFT" 100;
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.callout.say .quote::before { content: "“"; font-size: 28px; line-height: 0; vertical-align: -8px; margin-right: 2px; opacity: 0.5; }
+.callout.say .quote::after { content: "”"; font-size: 28px; line-height: 0; vertical-align: -16px; margin-left: 2px; opacity: 0.5; }
+
+.callout.watch {
+  background: var(--watch-bg);
+  border-color: var(--watch-border);
+  color: var(--watch-ink);
+}
+.callout.watch::before { content: "Watch out"; color: var(--watch-ink); }
+
+.callout.ask {
+  background: var(--ask-bg);
+  border-color: var(--ask-border);
+  color: var(--ask-ink);
+}
+.callout.ask::before { content: "If asked"; color: var(--ask-ink); }
+.callout.ask .q {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.callout.demo {
+  background: var(--demo-bg);
+  border-color: var(--demo-border);
+  color: var(--demo-ink);
+}
+.callout.demo::before { content: "Demo action"; color: var(--demo-ink); }
+
+.callout strong { color: inherit; font-weight: 700; }
+
+.bullets {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+.bullets li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 8px;
+  font-size: 14.5px;
+}
+.bullets li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.label {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 16px 0 6px;
+}
+
+code, .mono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9em;
+  background: var(--rule-soft);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+.demo-step {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--demo-border);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  position: relative;
+}
+.demo-step-num {
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background: var(--demo-border);
+  color: white;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.1em;
+}
+.demo-step h3 {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 6px;
+  padding-right: 80px;
+}
+.demo-step-time {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.demo-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.demo-row-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  padding-top: 3px;
+}
+.demo-row-content { line-height: 1.55; }
+.demo-row.say .demo-row-label { color: var(--say-border); }
+.demo-row.say .demo-row-content {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 14, "SOFT" 100;
+  font-style: italic;
+  color: var(--say-ink);
+  background: var(--say-bg);
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 2px solid var(--say-border);
+}
+.demo-row.show .demo-row-label { color: var(--accent); }
+
+/* QA ITEMS */
+.qa-grid {
+  display: grid;
+  gap: 14px;
+}
+.qa-item {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ask-border);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+.qa-q {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 14, "SOFT" 100;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ask-ink);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.qa-a {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* PRE-FLIGHT */
+details.preflight {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+details.preflight summary {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+details.preflight summary::before {
+  content: "▸";
+  color: var(--accent);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+details.preflight[open] summary::before { transform: rotate(90deg); }
+details.preflight ul {
+  margin: 16px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.check-item input { margin-top: 4px; cursor: pointer; }
+.check-item.done span { text-decoration: line-through; color: var(--muted); }
+
+/* TRANSITION TIPS */
+.transition {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-top: 1px dashed var(--rule);
+  margin-top: 16px;
+  font-style: italic;
+}
+.transition::before {
+  content: "↪ Next: ";
+  font-weight: 600;
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* PRINT */
+@media print {
+  body { background: white; color: black; font-size: 11pt; }
+  aside.sidebar { display: none; }
+  .app { display: block; max-width: none; }
+  main.content { padding: 20pt; max-width: none; }
+  .slide-card, .demo-step, .qa-item { break-inside: avoid; box-shadow: none; }
+  .callout { break-inside: avoid; }
+  details.preflight[open] { break-inside: avoid; }
+  details.preflight ul { display: block !important; }
+  details.preflight summary::before { display: none; }
+  section.section { break-before: auto; }
+  .theme-toggle, .timer-card { display: none; }
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  aside.sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--rule); }
+  main.content { padding: 32px 24px 80px; }
+  h1.title { font-size: 38px; }
+  .section h2 { font-size: 28px; }
+  .slide-card { padding: 20px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+  <div class="brand"><span class="pizza">Pizza 42</span><br>Presenter Notes</div>
+  <div class="brand-sub">CIAM Specialist · Tech Challenge</div>
+
+  <button class="theme-toggle" onclick="document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');">
+    <span id="theme-icon">◐</span> Theme
+  </button>
+
+  <div class="timer-card">
+    <div class="timer-label">Presentation timer</div>
+    <div class="timer-display" id="timer">00:00</div>
+    <div class="timer-buttons">
+      <button class="timer-btn" onclick="toggleTimer()">Start</button>
+      <button class="timer-btn" onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="timer-segment" id="segment">— not started —</div>
+  </div>
+
+  <nav class="toc">
+    <div class="toc-section">
+      <div class="toc-section-title">Before you start</div>
+      <ul class="toc-list">
+        <li><a href="#preflight"><span>Pre-flight checklist</span><span class="toc-time">—</span></a></li>
+        <li><a href="#timing"><span>Timing plan</span><span class="toc-time">—</span></a></li>
+      </ul>
+    </div>
+
+    <div class="toc-section">
+      <div class="toc-section-title">Opener · 5 min</div>
+      <ul class="toc-list">
+        <li><a href="#slide-1"><span>1 · Title</span><span class="toc-time">0:30</span></a></li>
+        <li><a href="#slide-2"><span>2 · Business Goals</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-3"><span>3 · Why Auth0</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-4"><span>4 · Requirements ✓</span><span class="toc-time">1:30</span></a></li>
+        <li><a href="#slide-5"><span>5 · Demo Agenda</span><span class="toc-time">0:45</span></a></li>
+      </ul>
+    </div>
+
+    <div class="toc-section">
+      <ul class="toc-list">
+        <li><a href="#demo" class="demo-link"><span>🎬 LIVE DEMO</span><span class="toc-time">20 min</span></a></li>
+      </ul>
+    </div>
+
+    <div class="toc-section">
+      <div class="toc-section-title">Walkthrough · 10 min</div>
+      <ul class="toc-list">
+        <li><a href="#slide-6"><span>6 · Architecture</span><span class="toc-time">1:00</span></a></li>
+        <li><a href="#slide-7"><span>7 · Universal Login</span><span class="toc-time">0:30</span></a></li>
+        <li><a href="#slide-8"><span>8 · Separating Identity</span><span class="toc-time">1:30</span></a></li>
+        <li><a href="#slide-9"><span>9 · OAuth Flows</span><span class="toc-time">1:30</span></a></li>
+        <li><a href="#slide-10"><span>10 · Tokens</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-11"><span>11 · Scopes vs RBAC</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-12"><span>12 · Passkeys</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-13"><span>13 · Tenant Config</span><span class="toc-time">1:00</span></a></li>
+        <li><a href="#slide-14"><span>14 · Code Walkthrough</span><span class="toc-time">1:30</span></a></li>
+        <li><a href="#slide-15"><span>15 · Security Controls</span><span class="toc-time">0:45</span></a></li>
+        <li><a href="#slide-16"><span>16 · Business Value</span><span class="toc-time">0:30</span></a></li>
+        <li><a href="#slide-17"><span>17 · Key Takeaways</span><span class="toc-time">0:30</span></a></li>
+      </ul>
+    </div>
+
+    <div class="toc-section">
+      <div class="toc-section-title">Q&amp;A · 10 min</div>
+      <ul class="toc-list">
+        <li><a href="#qa"><span>Question bank</span><span class="toc-time">—</span></a></li>
+        <li><a href="#emergency"><span>Emergency cards</span><span class="toc-time">—</span></a></li>
+      </ul>
+    </div>
+  </nav>
+</aside>
+
+<main class="content">
+
+  <h1 class="title">The <span class="accent">Pizza&nbsp;42</span> talk track</h1>
+  <p class="subtitle">Everything you say, the order you say it, and what to do when something goes sideways. Built from the architecture doc and the implementation you actually shipped.</p>
+
+  <div class="meta-row">
+    <div class="meta-item"><span class="meta-label">Total</span><span class="meta-value">45 min</span></div>
+    <div class="meta-item"><span class="meta-label">Slides</span><span class="meta-value">17</span></div>
+    <div class="meta-item"><span class="meta-label">Demo</span><span class="meta-value">~20 min</span></div>
+    <div class="meta-item"><span class="meta-label">Tenant</span><span class="meta-value mono">apnagra.us.auth0.com</span></div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- PRE-FLIGHT -->
+  <!-- ============================================== -->
+  <section class="section" id="preflight">
+    <div class="section-header">Before you start</div>
+    <h2>Pre-flight checklist</h2>
+    <p class="section-intro">Run through this 10 minutes before the call. Click each item as you do it — your browser remembers what's done.</p>
+
+    <details class="preflight" open>
+      <summary>Tenant &amp; app</summary>
+      <ul>
+        <li class="check-item"><input type="checkbox" data-key="t1"><span>Auth0 dashboard tab open at <code>apnagra.us.auth0.com</code> · already logged in</span></li>
+        <li class="check-item"><input type="checkbox" data-key="t2"><span>Vercel deployment URL is reachable · 200 OK on the home page</span></li>
+        <li class="check-item"><input type="checkbox" data-key="t3"><span>Post-Login Action is <strong>deployed</strong>, not just saved as draft</span></li>
+        <li class="check-item"><input type="checkbox" data-key="t4"><span>Google social connection is enabled and tested in the last 24h</span></li>
+        <li class="check-item"><input type="checkbox" data-key="t5"><span>Test user from previous demo deleted from Auth0 → Users (clean slate)</span></li>
+      </ul>
+    </details>
+
+    <details class="preflight" open>
+      <summary>Browser setup</summary>
+      <ul>
+        <li class="check-item"><input type="checkbox" data-key="b1"><span><strong>Incognito window</strong> for the demo — no cached state from your dev work</span></li>
+        <li class="check-item"><input type="checkbox" data-key="b2"><span>Second incognito window with your email inbox open (for the verification link demo)</span></li>
+        <li class="check-item"><input type="checkbox" data-key="b3"><span><code>jwt.io</code> tab open in a third window for live token decode</span></li>
+        <li class="check-item"><input type="checkbox" data-key="b4"><span>DevTools console pinned, Network tab cleared</span></li>
+        <li class="check-item"><input type="checkbox" data-key="b5"><span>Browser zoom at 100% (or 110% for screen-share legibility — pick one and rehearse)</span></li>
+        <li class="check-item"><input type="checkbox" data-key="b6"><span>All other tabs/windows closed — no Slack, no email surprises mid-share</span></li>
+      </ul>
+    </details>
+
+    <details class="preflight" open>
+      <summary>Code &amp; backup</summary>
+      <ul>
+        <li class="check-item"><input type="checkbox" data-key="c1"><span>VS Code open at <code>api/orders.js</code> and the Post-Login Action source</span></li>
+        <li class="check-item"><input type="checkbox" data-key="c2"><span>GitHub repo URL ready to paste if asked</span></li>
+        <li class="check-item"><input type="checkbox" data-key="c3"><span><strong>Screenshots of every demo step saved in a folder</strong> — your fallback if the live demo breaks</span></li>
+        <li class="check-item"><input type="checkbox" data-key="c4"><span>Architecture &amp; How-It-Works PDFs open in a tab — leave reference</span></li>
+      </ul>
+    </details>
+
+    <details class="preflight" open>
+      <summary>You</summary>
+      <ul>
+        <li class="check-item"><input type="checkbox" data-key="y1"><span>Phone on Do Not Disturb · slack notifications muted</span></li>
+        <li class="check-item"><input type="checkbox" data-key="y2"><span>Water within reach</span></li>
+        <li class="check-item"><input type="checkbox" data-key="y3"><span>This cheat sheet open on a second screen or phone</span></li>
+        <li class="check-item"><input type="checkbox" data-key="y4"><span>Timer started right after introductions — first slide goes up at 0:00</span></li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- TIMING -->
+  <!-- ============================================== -->
+  <section class="section" id="timing">
+    <div class="section-header">The 45 minutes</div>
+    <h2>Timing plan at a glance</h2>
+    <p class="section-intro">The brief gives you 25 / 10 / 10. Slides 1–5 + demo fill the first 25-minute block. Slides 6–17 are the walkthrough. Q&amp;A is the last 10.</p>
+
+    <div class="callout watch">
+      <strong>The brutal truth on timing:</strong> 12 walkthrough slides in 10 minutes is ~50 seconds each. Some slides get more, some less. Don't read bullets aloud — the panel can read. <strong>Narrate the why, not the what.</strong> If you're falling behind at slide 10, skip 15 &amp; 16 and land on 17.
+    </div>
+
+    <ul class="bullets">
+      <li><strong>0:00–5:00</strong> &nbsp;Slides 1–5 (business context + agenda)</li>
+      <li><strong>5:00–25:00</strong> &nbsp;Live demo (the showpiece — see demo script below)</li>
+      <li><strong>25:00–35:00</strong> &nbsp;Slides 6–17 (how you built it)</li>
+      <li><strong>35:00–45:00</strong> &nbsp;Q&amp;A</li>
+    </ul>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- OPENER SLIDES -->
+  <!-- ============================================== -->
+
+  <section class="section">
+    <div class="section-header">Opener · ~5 minutes</div>
+    <h2>Slides 1 – 5</h2>
+    <p class="section-intro">Goal: establish the business framing, prove you delivered, set up the demo. Don't get pulled into technical depth here — that's all post-demo.</p>
+
+    <!-- SLIDE 1 -->
+    <div class="slide-card" id="slide-1">
+      <div class="slide-head">
+        <div class="slide-num">1</div>
+        <div class="slide-title">Title</div>
+        <div class="slide-time">~30 sec</div>
+      </div>
+      <p class="lead">Establish the framing in one sentence. Confident, calm, brief.</p>
+
+      <div class="callout say">
+        <div class="quote">Today I'll walk through how Pizza 42 could modernize customer identity using Auth0. The goal wasn't simply implementing login — it was designing a secure, scalable customer-identity architecture that improves security, reduces operational burden, and creates a better customer experience.</div>
+      </div>
+
+      <div class="label">Then the agenda in one breath</div>
+      <p>"I'll cover the business context first (about five minutes), then a live demo of the working solution (twenty minutes), then walk through the architecture and we'll close with your questions."</p>
+
+      <div class="callout watch">
+        Resist the urge to introduce yourself in detail — the recruiter already did. Keep this slide under 30 seconds or you'll burn buffer you'll need later.
+      </div>
+
+      <div class="transition">Slide 2 — frame the customer problem before the technology.</div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide-card" id="slide-2">
+      <div class="slide-head">
+        <div class="slide-num">2</div>
+        <div class="slide-title">Business Goals</div>
+        <div class="slide-time">~45 sec</div>
+      </div>
+      <p class="lead">Empathy, not architecture. You're showing you heard what Pizza 42 actually asked for.</p>
+
+      <div class="callout say">
+        <div class="quote">Before I show what I built, I want to ground this in what Pizza 42's leadership actually asked for — and that's where every architectural decision came from.</div>
+      </div>
+
+      <div class="label">Walk the four cards · ~10 sec each</div>
+      <ul class="bullets">
+        <li><strong>Security</strong> wanted to eliminate password liability — stop storing credentials.</li>
+        <li><strong>Product</strong> wanted frictionless onboarding — social, passkeys, password reset.</li>
+        <li><strong>Marketing</strong> wanted richer customer data for personalization.</li>
+        <li><strong>Engineering</strong> wanted scalable OAuth and OIDC architecture.</li>
+      </ul>
+
+      <div class="callout say">
+        <div class="quote">These four asks aren't competing — that's exactly what makes a CIAM platform the right answer. One platform serves all four.</div>
+      </div>
+
+      <div class="callout ask">
+        <div class="q">"Aren't these in tension? Frictionless + secure?"</div>
+        Passkeys are the cleanest example of where they aren't. One tap, phishing-resistant, no password — security and UX in the same toggle. I'll show that in the demo.
+      </div>
+
+      <div class="transition">Slide 3 — connect those goals to Auth0 specifically.</div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide-card" id="slide-3">
+      <div class="slide-head">
+        <div class="slide-num">3</div>
+        <div class="slide-title">Why Auth0</div>
+        <div class="slide-time">~45 sec</div>
+      </div>
+      <p class="lead">Position Auth0 as a platform decision, not a login feature.</p>
+
+      <div class="callout say">
+        <div class="quote">Auth0 maps cleanly onto each stakeholder. Universal Login removes credential liability for security. Social login and passkeys deliver frictionless onboarding for product. OAuth with JWT validation protects APIs for engineering. And Actions plus metadata support personalization and future AI initiatives for marketing.</div>
+      </div>
+
+      <p>Pause briefly. Then the close:</p>
+
+      <div class="callout say">
+        <div class="quote">Identity becomes a platform decision — not simply a login feature.</div>
+      </div>
+
+      <div class="callout watch">
+        Don't read every card on the slide aloud — the panel is reading while you talk. Land the four mappings verbally, let the slide do the visual reinforcement.
+      </div>
+
+      <div class="transition">Slide 4 — your scoring rubric. Hand them the checklist.</div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide-card" id="slide-4">
+      <div class="slide-head">
+        <div class="slide-num">4</div>
+        <div class="slide-title">Requirements Checklist</div>
+        <div class="slide-time">~1:30</div>
+      </div>
+      <p class="lead">This is the slide that quietly tells the panel "yes, I did the work." Don't read every line — they can. Touch a couple of items they're about to see, then move.</p>
+
+      <div class="callout say">
+        <div class="quote">Before I jump into the demo, here is every requirement from the Pizza 42 brief and how it was delivered. All ten functional items are complete, deployed, and demoable today.</div>
+      </div>
+
+      <div class="label">Touch these three items briefly · 10 sec each</div>
+      <ul class="bullets">
+        <li>Item 4 (social + passkeys) — "Both are wired in. You'll see Google in the demo; passkeys are enabled in the tenant."</li>
+        <li>Item 6 (verified email) — "Enforced server-side, not just in the UI. I'll show why that matters."</li>
+        <li>Item 9 (order history → ID token) — "Built on a Post-Login Action with a namespaced custom claim. I'll show the Action code after the demo."</li>
+      </ul>
+
+      <div class="callout say">
+        <div class="quote">Stretch goals — account linking, progressive profiling, Google People API enrichment — I've thought through and can cover in Q&amp;A.</div>
+      </div>
+
+      <div class="callout watch">
+        90 seconds maximum. If you find yourself reading line 5, stop and move to slide 5. The checklist is reassurance, not the substance.
+      </div>
+
+      <div class="transition">Slide 5 — set up the demo, then go to the live screen.</div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide-card" id="slide-5">
+      <div class="slide-head">
+        <div class="slide-num">5</div>
+        <div class="slide-title">Live Demo Agenda</div>
+        <div class="slide-time">~45 sec</div>
+      </div>
+      <p class="lead">Pre-commit to the demo arc. Then share your screen.</p>
+
+      <div class="callout say">
+        <div class="quote">Here are the five demo steps. Each one maps to a stakeholder need — security, product, marketing, operations. I'll narrate the why, not just the click path. Let me share my screen.</div>
+      </div>
+
+      <div class="label">Hand-off rhythm</div>
+      <ul class="bullets">
+        <li>Read the five steps aloud (top to bottom — takes 15 seconds).</li>
+        <li>Say: "About twenty minutes for this." Sets their expectation.</li>
+        <li>Cmd-Tab to your incognito browser. Click "Share screen."</li>
+        <li>Take a breath. The demo starts now.</li>
+      </ul>
+
+      <div class="callout watch">
+        Sharing the screen is the highest-risk moment. Rehearse the keyboard combo. Have the right window already focused so you don't fumble in front of the panel.
+      </div>
+
+      <div class="transition">→ Live demo (next major section below).</div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- LIVE DEMO -->
+  <!-- ============================================== -->
+  <section class="section" id="demo">
+    <div class="section-header" style="color: var(--demo-border); border-color: var(--demo-border);">🎬 Live demo · ~20 minutes</div>
+    <h2 style="color: var(--demo-ink);">The showpiece</h2>
+    <p class="section-intro">This is where you win or lose. The panel has seen dozens of Pizza 42 demos. What sets yours apart isn't the clicks — it's narrating <em>why</em> each step matters from the stakeholder lens, and showing the mid-session freshness fix that most demos can't do.</p>
+
+    <div class="callout demo">
+      <strong>Golden rule for every demo step:</strong> say what you're about to do <em>before</em> you do it, then narrate the meaning as it happens. Mouse clicks are silent. Your voice is the value.
+    </div>
+
+    <!-- DEMO STEP 1 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 1</div>
+      <span class="demo-step-time">~1 min</span>
+      <h3>Land on the hero page (logged out)</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">Pizza 42 home page, no auth state. Point at the prominent "Log in" CTA.</div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">This is what a new customer sees. There's one Log in button. When the user clicks it, they'll be redirected to Auth0's Universal Login — Pizza 42 never sees the credential form. That's the security team's number-one ask resolved at the architecture level.</div>
+      </div>
+    </div>
+
+    <!-- DEMO STEP 2 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 2</div>
+      <span class="demo-step-time">~3 min</span>
+      <h3>Sign up with email/password — order is blocked</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">
+          1. Click "Log in" → land on Universal Login.<br>
+          2. Click "Sign up" → enter test email + password.<br>
+          3. Submit. You're redirected back to Pizza 42.<br>
+          4. Dashboard loads. Banner says "verify your email to place orders." Order button is disabled.<br>
+          5. Open DevTools → Network → pick the token request → decode in jwt.io → point at <code>email_verified: false</code>.
+        </div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">Notice three things. First, Pizza 42 never received the password — it went to Auth0's domain. Second, after signup we get an ID token whose <code>email_verified</code> claim is <code>false</code>. Third, the dashboard already enforces the gate — the button is disabled. But here's the thing: the button is just UX. The real gate is at the API layer. A hostile client could still call <code>/api/orders</code> directly. Let me show why that doesn't work.</div>
+      </div>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">Click the disabled button anyway (or use DevTools to call <code>/api/orders</code>). Backend returns 403 with <code>verify_email_first</code>.</div>
+      </div>
+    </div>
+
+    <!-- DEMO STEP 3 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 3</div>
+      <span class="demo-step-time">~3 min</span>
+      <h3>Verify email — focus listener unlocks the UI without refresh</h3>
+
+      <div class="callout watch" style="margin: 4px 0 14px;">
+        This is your <strong>proudest engineering moment</strong>. Most demos require a logout/login cycle here. Yours doesn't. Sell it.
+      </div>
+
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">
+          1. Switch to the email tab. Click the Auth0 verification link.<br>
+          2. Auth0 confirmation page appears.<br>
+          3. Switch back to the Pizza 42 tab. Don't click anything yet.<br>
+          4. Watch the banner disappear and the order button enable — <em>automatically</em>.<br>
+          5. Decode the new token in jwt.io → <code>email_verified: true</code>.
+        </div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">Watch the tab — I haven't clicked anything. When the window regained focus, a focus listener I wired into the SPA called <code>getAccessTokenSilently</code> with cache mode off. That forced the SDK to send a back-channel POST to Auth0's token endpoint using the refresh token. Auth0 re-ran the Post-Login Action, issued a fresh ID token with the current <code>email_verified</code> value, the SDK swapped the cached token, and React re-rendered. The user goes from inbox to verified to able-to-order without any manual refresh. That's the kind of polish that separates a working PoC from a real product.</div>
+      </div>
+
+      <div class="callout ask" style="margin-top: 12px;">
+        <div class="q">If they ask why refresh tokens, not iframe silent renew</div>
+        Iframe renewal depends on the Auth0 SSO cookie flowing as a third-party cookie. Chrome, Safari, and Brave increasingly block that. Refresh tokens use a back-channel POST — no cookies — and work everywhere. I enabled them with rotation: each refresh issues a new token and revokes the old one, with reuse detection as a breach signal.
+      </div>
+    </div>
+
+    <!-- DEMO STEP 4 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 4</div>
+      <span class="demo-step-time">~3 min</span>
+      <h3>Place an order — three gates, one HTTP call</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">
+          1. Pick "Margherita" + price. Click Place Order.<br>
+          2. Switch to Vercel logs (or DevTools network) — show the backend's verification: signature ✓, scope ✓, email_verified ✓.<br>
+          3. Show the Mgmt API PATCH to <code>app_metadata.orders</code>.<br>
+          4. Order success message appears in the UI.
+        </div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">One click in the UI; three independent gates on the backend. Gate one — JWT signature, audience, issuer all verified against Auth0's JWKS. Gate two — the access token's scope claim must contain <code>create:orders</code>. That's authorization, separate from authentication. Gate three — the backend calls Auth0's Management API live to check <code>email_verified</code>. That's not from the token, which could be a stale snapshot. It's the current state from Auth0 itself. Only when all three pass does the backend write the order — to <code>app_metadata</code>, not <code>user_metadata</code>, because orders are system-owned and tamper-proof.</div>
+      </div>
+      <div class="callout ask" style="margin-top: 12px;">
+        <div class="q">If they ask why a live Mgmt API call instead of trusting the token</div>
+        The token's <code>email_verified</code> is a snapshot from login time. A user who verifies mid-session would be blocked until they re-login. The live lookup costs one extra HTTP call — which the backend was making anyway to save the order — and gives always-current state.
+      </div>
+    </div>
+
+    <!-- DEMO STEP 5 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 5</div>
+      <span class="demo-step-time">~2 min</span>
+      <h3>Switch tabs — order history appears in the ID token</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">
+          1. Switch to another tab briefly, then back. The focus listener fires again.<br>
+          2. New ID token is issued; this time the Action injects the new order.<br>
+          3. Decode in jwt.io — point at <code>https://pizza42.com/orders</code> claim with the order array.<br>
+          4. Show the dashboard rendering the history.
+        </div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">Same focus listener, different payoff. The Post-Login Action ran during silent renewal, read the updated <code>app_metadata.orders</code>, and copied it into the ID token under a namespaced custom claim. The namespace — <code>https://pizza42.com/</code> — isn't a URL that resolves. It's just a unique string. Without the namespace, Auth0 silently drops the claim. That's one of the most time-consuming bugs in the platform, and avoiding it is a small but real signal that you've built on Actions before.</div>
+      </div>
+    </div>
+
+    <!-- DEMO STEP 6 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 6</div>
+      <span class="demo-step-time">~1 min</span>
+      <h3>Log in with Google — pre-verified, one click</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">Log out. Click Log in. Choose "Continue with Google." After consent, you're back in Pizza 42 — already verified, already able to order.</div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">One click, no password, pre-verified email because Google vouches for it. The marketing team's "richer customer data" ask starts here — the social connection pre-populates name, picture, locale, all without a form.</div>
+      </div>
+    </div>
+
+    <!-- DEMO STEP 7 -->
+    <div class="demo-step">
+      <div class="demo-step-num">STEP 7</div>
+      <span class="demo-step-time">~5 min</span>
+      <h3>Open the Auth0 dashboard — show the tenant work</h3>
+      <div class="demo-row show">
+        <div class="demo-row-label">Show</div>
+        <div class="demo-row-content">
+          1. <strong>Applications</strong> — three apps: SPA, M2M Backend, default. Click into the M2M one, show it has Mgmt API access with scoped permissions only.<br>
+          2. <strong>APIs</strong> — Pizza 42 API. Identifier <code>https://pizza42-api</code>. Permissions tab shows <code>create:orders</code>. Application Access tab shows the SPA is granted the scope.<br>
+          3. <strong>Actions</strong> → Library → Custom → click into Post-Login Action. Show the code (10 lines). Highlight <code>api.idToken.setCustomClaim()</code> and the namespaced URI.<br>
+          4. <strong>Users</strong> → click the test user you just created. Show <code>app_metadata.orders</code> populated with the order from step 4.<br>
+          5. <strong>Authentication → Database</strong> → show Username-Password is on, passkeys toggle is on. <strong>Social</strong> → Google is on.
+        </div>
+      </div>
+      <div class="demo-row say">
+        <div class="demo-row-label">Say</div>
+        <div class="demo-row-content">Three applications, not one — each has a different OAuth flow and a different trust boundary. The SPA uses Authorization Code with PKCE. The M2M Backend uses Client Credentials. Mixing them would violate least privilege. The Action is fifteen lines of code. Auth0 strips non-OIDC claims unless code explicitly adds them, and the URI namespace is the convention to avoid collision with reserved names. Everything you've seen in the demo traces back to artifacts in this dashboard — and all of it took an hour to configure.</div>
+      </div>
+    </div>
+
+    <div class="callout watch">
+      <strong>Time check at end of demo:</strong> You should be around the 25:00 mark when you stop sharing. If you're at 22:00, slow down — you have time. If you're past 25:00, skip step 7's database/social section and go straight to "Let me close my screen-share and walk through the architecture."
+    </div>
+
+    <div class="transition">Stop sharing. Back to slides — start with slide 6.</div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- WALKTHROUGH SLIDES -->
+  <!-- ============================================== -->
+  <section class="section">
+    <div class="section-header">Walkthrough · ~10 minutes</div>
+    <h2>Slides 6 – 17</h2>
+    <p class="section-intro">Pacing is tight — 12 slides in 10 minutes. Don't read bullets. Each slide gets one verbatim opener, one transition, and 1–2 points of substance. If you're behind, the skippable ones are 15 and 16.</p>
+
+    <!-- SLIDE 6 -->
+    <div class="slide-card" id="slide-6">
+      <div class="slide-head">
+        <div class="slide-num">6</div>
+        <div class="slide-title">High-Level Architecture</div>
+        <div class="slide-time">~1:00</div>
+      </div>
+      <p class="lead">Left-to-right walkthrough. Trust boundaries are the headline.</p>
+      <div class="callout say">
+        <div class="quote">At a glance: React SPA on the left, Auth0 in the middle, our backend on the right. Five components, but more importantly three trust boundaries — public client, protected resource server, and privileged backend operations. Each one runs a different OAuth flow because each one has a different security posture.</div>
+      </div>
+      <div class="transition">Slide 7 — start with the highest-leverage choice: Universal Login.</div>
+    </div>
+
+    <!-- SLIDE 7 -->
+    <div class="slide-card" id="slide-7">
+      <div class="slide-head">
+        <div class="slide-num">7</div>
+        <div class="slide-title">Why Universal Login</div>
+        <div class="slide-time">~0:30</div>
+      </div>
+      <p class="lead">Quick. The "why" is operational simplicity + security posture.</p>
+      <div class="callout say">
+        <div class="quote">Universal Login is the single biggest leverage point in this architecture. Pizza 42 never sees a credential. MFA, password reset, social, passkeys — all turn-key, all on Auth0's hardened login origin. The trade-off is less branding control, which Auth0's customization options largely solve.</div>
+      </div>
+      <div class="transition">Slide 8 — the three-application architecture and why it matters.</div>
+    </div>
+
+    <!-- SLIDE 8 -->
+    <div class="slide-card" id="slide-8">
+      <div class="slide-head">
+        <div class="slide-num">8</div>
+        <div class="slide-title">Separating Identity Responsibilities</div>
+        <div class="slide-time">~1:30</div>
+      </div>
+      <p class="lead">Slow down here. This is one of the strongest architecture slides and the panel will linger.</p>
+      <div class="callout say">
+        <div class="quote">Three Auth0 applications, three trust boundaries. The SPA is a public client — anyone can read its JavaScript, so it cannot hold a secret. It uses Authorization Code with PKCE, the only safe choice. The backend API is a resource server — it validates tokens and enforces scope. And the M2M application is a confidential client — it has its own credentials, lives only on the server, and exists for one reason: to call Auth0's Management API with least privilege.</div>
+      </div>
+      <div class="callout ask">
+        <div class="q">"Why not one app that does everything?"</div>
+        Three reasons. Different grants — Auth0 doesn't let one app record use both Authorization Code and Client Credentials. Different trust levels — the M2M holds powerful Management API scopes that should never touch a browser. And audit clarity — the Auth0 logs tag every action by app, and mixing them would muddy investigations.
+      </div>
+      <div class="transition">Slide 9 — the OAuth flows and what I deliberately did not choose.</div>
+    </div>
+
+    <!-- SLIDE 9 -->
+    <div class="slide-card" id="slide-9">
+      <div class="slide-head">
+        <div class="slide-num">9</div>
+        <div class="slide-title">OAuth Flows We Selected</div>
+        <div class="slide-time">~1:30</div>
+      </div>
+      <p class="lead">The "intentionally rejected" panel is what the panel grades you on — it proves reasoning, not copy-paste.</p>
+      <div class="callout say">
+        <div class="quote">Three flows in this architecture. Authorization Code with PKCE for the SPA — current OAuth 2.1 best practice for browser apps. Client Credentials for the backend M2M — the only correct choice when no user is involved. And refresh tokens with rotation for silent session renewal.</div>
+      </div>
+      <div class="callout say">
+        <div class="quote">Three flows I deliberately rejected. Implicit — deprecated, puts tokens in the URL. ROPC — requires the app to handle the password, which defeats the whole point of choosing Auth0. And Authorization Code without PKCE — fine for confidential clients but unsafe for SPAs that can't keep a secret.</div>
+      </div>
+      <div class="callout watch">
+        Do <strong>not</strong> turn this into an RFC lecture. Three flows in, three flows out, twenty seconds each. The reasoning is what scores, not the depth.
+      </div>
+      <div class="transition">Slide 10 — what each token actually does.</div>
+    </div>
+
+    <!-- SLIDE 10 -->
+    <div class="slide-card" id="slide-10">
+      <div class="slide-head">
+        <div class="slide-num">10</div>
+        <div class="slide-title">Tokens in the Architecture</div>
+        <div class="slide-time">~0:45</div>
+      </div>
+      <p class="lead">The classic trap: which token does the API trust? Be ready.</p>
+      <div class="callout say">
+        <div class="quote">Three tokens, three jobs, three audiences — that's the headline. The ID token tells the SPA who the user is. The access token tells the backend what the user is allowed to do. The refresh token lives only between the SPA and Auth0's token endpoint, never anywhere else. Each has its own audience claim. Each is signed with RS256. They are not interchangeable.</div>
+      </div>
+      <div class="callout ask">
+        <div class="q">"Which token does the backend trust?"</div>
+        The <strong>access</strong> token, not the ID token. The ID token's audience is the SPA's client ID — it's meant for the client. The access token's audience is the API identifier. Sending the wrong one is one of the most common mistakes I've seen in OAuth integrations.
+      </div>
+      <div class="transition">Slide 11 — authorization choice and the upgrade path.</div>
+    </div>
+
+    <!-- SLIDE 11 -->
+    <div class="slide-card" id="slide-11">
+      <div class="slide-head">
+        <div class="slide-num">11</div>
+        <div class="slide-title">Scopes vs RBAC</div>
+        <div class="slide-time">~0:45</div>
+      </div>
+      <p class="lead">Demonstrate that you didn't over-engineer for a 6-hour build, but you know the upgrade path.</p>
+      <div class="callout say">
+        <div class="quote">For this PoC every customer can place an order, so a single scope — <code>create:orders</code> — does the job. RBAC adds real value when different users get different permission sets: staff can refund, customers can't, managers can do both. The architecture is already permissions-claim aware, so turning on RBAC later is a tenant setting, not a refactor.</div>
+      </div>
+      <div class="transition">Slide 12 — answer the passkeys question before they ask.</div>
+    </div>
+
+    <!-- SLIDE 12 -->
+    <div class="slide-card" id="slide-12">
+      <div class="slide-head">
+        <div class="slide-num">12</div>
+        <div class="slide-title">Passkeys &amp; Passwordless</div>
+        <div class="slide-time">~0:45</div>
+      </div>
+      <p class="lead">The brief explicitly asks. Answer it as a stakeholder mapping, not a feature pitch.</p>
+      <div class="callout say">
+        <div class="quote">Passkeys are the rare feature that wins on all four stakeholder axes at the same time. Phishing-resistant for security — they're origin-bound and can't be replayed. One-tap for product — Face ID, Touch ID, Windows Hello. Help-desk cost reduction for operations — password resets are the number-one CIAM ticket driver, and passkeys remove the underlying problem. And zero custom code for engineering — it's a toggle in Universal Login.</div>
+      </div>
+      <div class="callout ask">
+        <div class="q">"What about users on devices without WebAuthn?"</div>
+        Email/password and magic links both stay as fallbacks. Passkeys augment, they don't replace.
+      </div>
+      <div class="transition">Slide 13 — the tenant artifacts behind the demo.</div>
+    </div>
+
+    <!-- SLIDE 13 -->
+    <div class="slide-card" id="slide-13">
+      <div class="slide-head">
+        <div class="slide-num">13</div>
+        <div class="slide-title">Auth0 Tenant Configuration</div>
+        <div class="slide-time">~1:00</div>
+      </div>
+      <p class="lead">You already showed most of this live. The slide is the artifact summary.</p>
+      <div class="callout say">
+        <div class="quote">Most of what's on this slide you've already seen in the demo — three applications, one API with the <code>create:orders</code> scope, two connections, one Post-Login Action. I'll call out two things. First, the Action is built on Auth0 Actions — the current extensibility model. Rules and Hooks are end-of-life in November 2026 and unavailable to new tenants since October 2023. Half the public reference repos for Pizza 42 still use Rules — I made a deliberate choice not to copy them. Second, account linking is enabled on the database connection so a user who signs up with email and later uses Google ends up as one identity, not two.</div>
+      </div>
+      <div class="transition">Slide 14 — show the actual code, briefly.</div>
+    </div>
+
+    <!-- SLIDE 14 -->
+    <div class="slide-card" id="slide-14">
+      <div class="slide-head">
+        <div class="slide-num">14</div>
+        <div class="slide-title">Code Walkthrough</div>
+        <div class="slide-time">~1:30</div>
+      </div>
+      <p class="lead">Two snippets. Sell the brevity — Auth0 does the heavy lifting; your code is minimal.</p>
+      <div class="callout say">
+        <div class="quote">Two pieces of code do all the heavy lifting. Left side — the Post-Login Action. Fifteen lines. Reads orders from <code>app_metadata</code>, writes them to the ID token under a namespaced custom claim. Right side — the API middleware. Three independent gates: JWT signature, required scope, and a live email-verified check against the Management API.</div>
+      </div>
+      <div class="callout say">
+        <div class="quote">Auth0 handles identity. Pizza 42 code only checks signature, scope, and verified-email. Clean separation of concerns.</div>
+      </div>
+      <div class="callout watch">
+        If the panel asks to see the live source, Cmd-Tab to VS Code. Don't promise to share later — show it now if asked.
+      </div>
+      <div class="transition">Slide 15 — the security story, briefly.</div>
+    </div>
+
+    <!-- SLIDE 15 -->
+    <div class="slide-card" id="slide-15">
+      <div class="slide-head">
+        <div class="slide-num">15</div>
+        <div class="slide-title">Security Controls</div>
+        <div class="slide-time">~0:45</div>
+      </div>
+      <p class="lead">Layered defense. Skip this slide if you're behind on time.</p>
+      <div class="callout say">
+        <div class="quote">No single control is trusted alone. JWT signature validation, scope enforcement, server-side email verification, secrets isolation, refresh token rotation, and tamper-proof metadata storage. Every protected operation passes through multiple independent gates. The platform also offers MFA, breached password detection, bot detection, and anomaly detection — all toggleable beyond what's shipped here.</div>
+      </div>
+      <div class="transition">Slide 16 — close the business loop.</div>
+    </div>
+
+    <!-- SLIDE 16 -->
+    <div class="slide-card" id="slide-16">
+      <div class="slide-head">
+        <div class="slide-num">16</div>
+        <div class="slide-title">Business Value Mapping</div>
+        <div class="slide-time">~0:30</div>
+      </div>
+      <p class="lead">Quick. Reconnect to stakeholder asks one final time. Also skippable.</p>
+      <div class="callout say">
+        <div class="quote">One identity platform; value across every team Pizza 42 cares about. Security reduces liability. Product improves conversion. Marketing gains structured customer data. Operations cuts support volume. And future AI initiatives get a clean, structured identity context to build on. That's why identity becomes a strategic platform investment, not a feature decision.</div>
+      </div>
+      <div class="transition">Slide 17 — close.</div>
+    </div>
+
+    <!-- SLIDE 17 -->
+    <div class="slide-card" id="slide-17">
+      <div class="slide-head">
+        <div class="slide-num">17</div>
+        <div class="slide-title">Key Takeaways</div>
+        <div class="slide-time">~0:30</div>
+      </div>
+      <p class="lead">Slow down. Calm tone. End with the line you want them to remember.</p>
+      <div class="callout say">
+        <div class="quote">To wrap up: modern OAuth and Auth0 best practices, a balance between UX and security, an enterprise-scale evolution path through RBAC and adaptive auth, and one identity platform aligning security, product, marketing, and engineering. The result is a scalable CIAM architecture that balances security, customer experience, and operational simplicity through a single modern identity platform.</div>
+      </div>
+      <p>Then a quiet pause. Then:</p>
+      <div class="callout say">
+        <div class="quote">I'd love to take your questions.</div>
+      </div>
+      <div class="transition">Q&amp;A — see the question bank below.</div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- Q&A BANK -->
+  <!-- ============================================== -->
+  <section class="section" id="qa">
+    <div class="section-header">Q&amp;A · ~10 minutes</div>
+    <h2>Anticipated questions</h2>
+    <p class="section-intro">Ten questions from the architecture doc, plus the curveballs requirement #11 warns about. Each answer is 1–2 sentences — say it, then stop. Resist the urge to keep talking.</p>
+
+    <div class="qa-grid">
+
+      <div class="qa-item">
+        <div class="qa-q">Why Authorization Code + PKCE, not Implicit?</div>
+        <div class="qa-a">Implicit puts tokens in the URL — they end up in browser history, server logs, and referer headers. Auth Code + PKCE keeps them in the response body of the token endpoint, and PKCE replaces the client secret with a one-time crypto challenge generated per login. It's the current OAuth 2.1 and IETF best practice for browser apps.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Why a separate Machine-to-Machine application?</div>
+        <div class="qa-a">Credential isolation — the SPA can't safely hold a secret, but the backend can. Different OAuth grant — SPA uses Authorization Code with PKCE, M2M uses Client Credentials, and Auth0 doesn't allow mixing grants in one app record. Least privilege — the M2M's Management API scopes are powerful and should never touch a browser. And audit clarity — every Auth0 log is tagged by which app made the call.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">What about refresh tokens? How do you handle expiry?</div>
+        <div class="qa-a">Refresh tokens with rotation are enabled. Each refresh issues a new refresh token and revokes the previous one — if Auth0 ever sees the old one reused, it's a breach signal and the entire token family is revoked. The SPA uses refresh tokens over iframe silent renew because third-party cookies are increasingly blocked in modern browsers, and refresh tokens are back-channel POSTs that work everywhere.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Front channel vs back channel — what's the distinction?</div>
+        <div class="qa-a">Front channel is anything that travels through browser redirects — visible in URLs. The authorization request to <code>/authorize</code> goes through the front channel. Back channel is server-to-server HTTP. The token exchange at <code>/oauth/token</code>, JWKS fetches for signature verification, and all Management API calls go through the back channel. We use the front channel only for the initial redirect; all token traffic is back channel so tokens never appear in the URL.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Why save orders to user metadata? Isn't that an anti-pattern?</div>
+        <div class="qa-a">In production it would be — and I'd push back on this requirement. The right place for orders is Pizza 42's own database, with maybe a thin summary mirrored to <code>app_metadata</code> if it needs to ride in tokens. I made the spec'd choice for the PoC but used <code>app_metadata</code> not <code>user_metadata</code>, because orders are system-owned and there's no SPA-self-edit scope for <code>app_metadata</code>. That at least makes the order data tamper-proof.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Why put order history in the ID token? That doesn't scale.</div>
+        <div class="qa-a">Honest answer — for a real Pizza 42 it shouldn't. Tokens travel in headers, they have 24-hour lifetimes, and they carry blast-radius risk if they leak. In production I'd put a summary in the token — order count, last order timestamp — and fetch the full list on demand via a <code>read:orders</code> scope. The requirement asked for the full list, so I delivered it, but I'd flag this on a real customer engagement.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">How would you do progressive profiling?</div>
+        <div class="qa-a">A Post-Login Action that triggers an additional flow on logins after the first — using <code>api.redirect.sendUserTo()</code> to redirect to a Pizza 42 page that captures one more field — favorite pizza, dietary preferences, delivery zone — and writes it to <code>user_metadata</code>. Capture is gradual, signup stays frictionless, and marketing gets a richer profile over time.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">What's the GenAI angle?</div>
+        <div class="qa-a">Two layers. First — the order history claim in the ID token is already a structured customer context that a reorder-recommendation chatbot can consume directly. Second — Auth0's emerging Auth for GenAI gives agent-identity and delegated tool-use, so a Pizza 42 agent can act on a user's behalf with scoped, auditable permissions. It's identity infrastructure for AI agents, not just human users.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">What changes at 10 million users?</div>
+        <div class="qa-a">Orders move to Pizza 42's own database; <code>app_metadata</code> only carries a summary if it's used in tokens. A custom domain like <code>auth.pizza42.com</code> for branding and first-party cookies. Refresh token rotation with shorter lifetimes. Adaptive MFA on higher-risk actions. Log streams piped to your SIEM. Account linking for users who arrive via multiple IdPs. And progressive profiling instead of one big signup form.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">How do you rotate the M2M client secret?</div>
+        <div class="qa-a">Auth0 supports multiple credentials per M2M app. Generate the new credential, deploy it to env vars, shift traffic, then revoke the old one — zero downtime. For higher assurance you can switch the M2M from shared-secret authentication to private-key JWT, which is essentially mTLS-style auth and removes the shared-secret leak risk entirely.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">What if Auth0 is down?</div>
+        <div class="qa-a">JWT validation keeps working as long as the backend has cached the JWKS. The SPA gracefully degrades to read-only or cached views for already-authenticated users. New logins are blocked, and there's no realistic mitigation for that without a multi-IdP fallback — which is a bigger architectural change with its own cost. The right answer for most customers is to lean on Auth0's 99.99% SLA and design for graceful degradation, not multi-IdP.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Why a live Mgmt API check for email_verified instead of trusting the token?</div>
+        <div class="qa-a">The token's <code>email_verified</code> is a snapshot from login time. A user who verifies mid-session would be blocked until they re-authenticated. The live lookup costs one extra HTTP call — which the backend is making anyway to save the order — and gives always-current state. We pair that backend authority with a focus-listener silent renewal so the UI catches up without a manual refresh.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">How do you handle account linking — same person, two IdPs?</div>
+        <div class="qa-a">Account linking is enabled on the database connection. If a user signs up with email and later logs in with Google using the same email, Auth0 links the two identities into one user record. The order history follows the canonical user, not the auth method.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">Pizza 42 wants B2B — corporate ordering for offices. How would you extend this?</div>
+        <div class="qa-a">Auth0 Organizations. Each corporate customer becomes an organization with its own branded login page, its own SSO connection (SAML or OIDC to their IdP), and its own roles. The same SPA serves both consumer and B2B modes — <code>organization</code> claim in the token tells the backend which tenant context to apply. Adds about a day's work on top of the existing architecture.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- EMERGENCY -->
+  <!-- ============================================== -->
+  <section class="section" id="emergency">
+    <div class="section-header">If things go sideways</div>
+    <h2>Emergency cards</h2>
+    <p class="section-intro">You won't need any of this. Read it once anyway — it removes the fear.</p>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">🚨</div>
+        <div class="slide-title">The live demo broke</div>
+      </div>
+      <div class="callout say">
+        <div class="quote">It looks like I've hit a snag with the live demo. Let me show you the same flow through screenshots so we can keep moving — I have everything captured.</div>
+      </div>
+      <p>Open your screenshot folder. Walk through the same seven steps using the images. Narrate exactly the same script. <strong>Don't apologize repeatedly</strong> — acknowledge it once, pivot, move on. The panel cares more about how you handle it than the fact it happened.</p>
+    </div>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">🤔</div>
+        <div class="slide-title">You don't know the answer</div>
+      </div>
+      <div class="callout say">
+        <div class="quote">I haven't dug into that specifically. Here's how I'd approach finding out — [your approach]. My instinct is [your guess], but I'd want to verify before being confident.</div>
+      </div>
+      <p>Saying "I don't know" honestly + showing your investigation approach is <strong>far stronger</strong> than bluffing. Identity is a deep field; nobody expects total recall. The senior people on the panel will recognize and respect this.</p>
+    </div>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">⏱</div>
+        <div class="slide-title">You're behind on time</div>
+      </div>
+      <p>Time-check is at the end of the demo (~25:00) and after slide 10 (~30:00). If you're behind:</p>
+      <ul class="bullets">
+        <li><strong>Skip slides 15 and 16</strong> — they're reinforcement, not new substance.</li>
+        <li>Go straight from slide 14 (code walkthrough) to slide 17 (takeaways).</li>
+        <li><strong>Never</strong> rush slide 17 — that's the slide they remember. Pace it normally.</li>
+        <li>Leave the full 10 minutes for Q&amp;A. Cutting Q&amp;A short is worse than cutting walkthrough slides.</li>
+      </ul>
+    </div>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">😶</div>
+        <div class="slide-title">You forgot what you were saying mid-sentence</div>
+      </div>
+      <p>Take a breath. Look at the slide. Say:</p>
+      <div class="callout say">
+        <div class="quote">Let me re-frame that.
+        </div>
+      </div>
+      <p>Then read the slide title aloud and pick up the opener for that slide. The panel will assume you were just gathering your thoughts.</p>
+    </div>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">💬</div>
+        <div class="slide-title">A panelist interrupts during the demo</div>
+      </div>
+      <p>Two cases. If it's a clarifying question, answer it briefly (one sentence) and continue. If it's a deep technical question:</p>
+      <div class="callout say">
+        <div class="quote">Great question — I want to give it a real answer, and I have a slide on exactly that coming up. Let me park it and come back to it in five minutes.
+        </div>
+      </div>
+      <p><strong>Then actually come back to it.</strong> Make a mental note. Forgetting their parked question is worse than not parking it.</p>
+    </div>
+
+    <div class="slide-card">
+      <div class="slide-head">
+        <div class="slide-num">🎤</div>
+        <div class="slide-title">Closing the call</div>
+      </div>
+      <p>After the final question:</p>
+      <div class="callout say">
+        <div class="quote">Thanks for the great questions. I really enjoyed working through this challenge — Auth0's developer experience is genuinely strong, and the problem space is one I want to spend more time in. Looking forward to hearing back.
+        </div>
+      </div>
+      <p>One sentence about enjoyment + one about interest in the role. Then stop talking. Don't fill silence.</p>
+    </div>
+
+  </section>
+
+  <p style="text-align:center; color: var(--muted); font-size: 13px; margin-top: 64px; font-style: italic;">
+    Built from the implementation in <code>/_oktaInterview</code>, the architecture PDF, and the how-it-works doc.<br>
+    You've got this.
+  </p>
+
+</main>
+</div>
+
+<script>
+// Theme persistence
+if (localStorage.getItem('theme') === 'dark') {
+  document.body.classList.add('dark');
+}
+
+// Pre-flight checkboxes persistence
+document.querySelectorAll('.check-item input').forEach(input => {
+  const key = 'preflight-' + input.dataset.key;
+  if (localStorage.getItem(key) === '1') {
+    input.checked = true;
+    input.closest('.check-item').classList.add('done');
+  }
+  input.addEventListener('change', () => {
+    localStorage.setItem(key, input.checked ? '1' : '0');
+    input.closest('.check-item').classList.toggle('done', input.checked);
+  });
+});
+
+// Timer
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+const segments = [
+  { from: 0, to: 300, label: 'Opener (slides 1–5)' },
+  { from: 300, to: 1500, label: '🎬 Live demo' },
+  { from: 1500, to: 2100, label: 'Walkthrough (slides 6–17)' },
+  { from: 2100, to: 2700, label: 'Q&A' },
+  { from: 2700, to: Infinity, label: 'Over time' }
+];
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  document.getElementById('timer').textContent = fmt(timerSeconds);
+  const seg = segments.find(s => timerSeconds >= s.from && timerSeconds < s.to);
+  document.getElementById('segment').textContent = timerRunning ? seg.label : (timerSeconds > 0 ? '⏸ paused · ' + seg.label : '— not started —');
+  if (timerSeconds >= 2700) {
+    document.getElementById('timer').style.color = 'var(--demo-border)';
+  } else if (timerSeconds >= 2100) {
+    document.getElementById('timer').style.color = 'var(--accent)';
+  } else {
+    document.getElementById('timer').style.color = 'var(--ink)';
+  }
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.querySelector('.timer-buttons .timer-btn').textContent = 'Resume';
+  } else {
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      updateTimerDisplay();
+    }, 1000);
+    timerRunning = true;
+    document.querySelector('.timer-buttons .timer-btn').textContent = 'Pause';
+  }
+  updateTimerDisplay();
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 0;
+  document.querySelector('.timer-buttons .timer-btn').textContent = 'Start';
+  updateTimerDisplay();
+}
+
+updateTimerDisplay();
+</script>
+
+</body>
+</html>

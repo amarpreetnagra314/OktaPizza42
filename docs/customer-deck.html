@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pizza 42 + Auth0 — Customer Deck</title>
+<style>
+  @page { size: 13.333in 7.5in; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937;
+    background: #fafafa;
+  }
+  .slide {
+    width: 13.333in;
+    height: 7.5in;
+    padding: 0.6in 0.8in;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+  }
+  .slide:last-child { page-break-after: auto; }
+
+  /* COVER */
+  .cover {
+    background: linear-gradient(135deg, #fef3c7 0%, #fef9f3 50%, #ffe4d6 100%);
+    justify-content: center;
+    position: relative;
+  }
+  .cover h1 {
+    font-size: 56pt;
+    margin: 0;
+    color: #374151;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .cover .subtitle {
+    font-size: 18pt;
+    color: #6b7280;
+    margin-top: 0.15in;
+    max-width: 5.5in;
+  }
+  .cover .body {
+    font-size: 13pt;
+    color: #6b7280;
+    margin-top: 0.3in;
+    max-width: 5.5in;
+    line-height: 1.5;
+  }
+  .cover .icon-block {
+    position: absolute;
+    left: 0.6in;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 200pt;
+    opacity: 0.15;
+    line-height: 1;
+  }
+  .cover .right { margin-left: 4.5in; }
+
+  /* GENERIC */
+  .slide h1 {
+    font-size: 30pt;
+    color: #374151;
+    margin: 0 0 0.3in 0;
+    font-weight: 700;
+  }
+  .slide h1 + .lede {
+    color: #6b7280;
+    font-size: 13pt;
+    margin: -0.2in 0 0.25in 0;
+    max-width: 8in;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3in; align-items: stretch; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25in; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.2in; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.18in; }
+
+  .card {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 0.3in;
+    border: 1px solid #e5e7eb;
+  }
+  .card.lav { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-color: #ddd6fe; }
+  .card.peach { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-color: #fed7aa; }
+  .card.mint { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-color: #a7f3d0; }
+  .card.sky { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; }
+  .card.rose { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-color: #fecdd3; }
+
+  .card .ico {
+    font-size: 22pt;
+    margin-bottom: 0.1in;
+    display: inline-block;
+  }
+  .card h3 {
+    font-size: 16pt;
+    margin: 0 0 0.08in 0;
+    color: #1f2937;
+    font-weight: 600;
+  }
+  .card p {
+    font-size: 11.5pt;
+    color: #4b5563;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .small-card {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 0.2in;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+  }
+  .small-card .ico { font-size: 20pt; margin-bottom: 6px; display: block; }
+  .small-card h4 { font-size: 12pt; margin: 0 0 4px 0; color: #1f2937; }
+  .small-card p { font-size: 9.5pt; color: #4b5563; margin: 0; line-height: 1.4; }
+
+  /* FLOW */
+  .flow-h {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0.25in 0;
+  }
+  .flow-h .node {
+    flex: 1;
+    text-align: center;
+  }
+  .flow-h .node .circle {
+    width: 1.2in;
+    height: 1.2in;
+    border-radius: 50%;
+    border: 3px solid #a78bfa;
+    margin: 0 auto 0.12in auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    font-size: 28pt;
+    color: #7c3aed;
+  }
+  .flow-h .node .label {
+    font-size: 11pt;
+    color: #374151;
+    font-weight: 600;
+  }
+  .flow-h .arrow {
+    color: #c4b5fd;
+    font-size: 24pt;
+    padding: 0 4px;
+  }
+
+  /* Roadmap */
+  .roadmap-row {
+    display: grid;
+    grid-template-columns: 0.5in 1fr;
+    gap: 0.2in;
+    align-items: start;
+    margin-bottom: 0.18in;
+  }
+  .roadmap-num {
+    width: 0.4in;
+    height: 0.4in;
+    border-radius: 50%;
+    background: #ede9fe;
+    color: #6d28d9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14pt;
+  }
+  .roadmap-row h4 { font-size: 13pt; margin: 0 0 4px 0; color: #1f2937; }
+  .roadmap-row p { font-size: 11pt; color: #4b5563; margin: 0; line-height: 1.5; }
+
+  /* Footer */
+  .footer {
+    position: absolute;
+    bottom: 0.25in;
+    left: 0.8in;
+    right: 0.8in;
+    font-size: 9pt;
+    color: #9ca3af;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 8px;
+  }
+
+  /* Demo steps */
+  .demo-step { padding: 0.18in 0; border-top: 2px solid #ede9fe; }
+  .demo-step .num {
+    font-size: 9pt; color: #9ca3af; letter-spacing: 2px; margin-bottom: 4px;
+  }
+  .demo-step h4 { font-size: 14pt; margin: 0 0 4px 0; color: #1f2937; }
+  .demo-step p { font-size: 11pt; color: #4b5563; margin: 0; line-height: 1.5; }
+
+  /* OAuth quadrants */
+  .oauth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.18in;
+    margin-top: 0.15in;
+  }
+  .oauth-box {
+    background: #ffffff;
+    border: 2px solid #1f2937;
+    border-radius: 8px;
+    padding: 0.18in;
+  }
+  .oauth-box h4 { margin: 0 0 0.05in 0; font-size: 12pt; color: #1f2937; }
+  .oauth-box .tag { font-size: 9pt; color: #6b7280; }
+  .oauth-box p { font-size: 10pt; margin: 4px 0 0 0; color: #4b5563; }
+
+  .callout {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    padding: 0.18in;
+    border-radius: 0 8px 8px 0;
+    color: #065f46;
+    font-size: 11.5pt;
+    margin-top: 0.15in;
+  }
+  .callout-note {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 0.15in;
+    border-radius: 0 8px 8px 0;
+    color: #1e40af;
+    font-size: 10.5pt;
+    margin-top: 0.15in;
+  }
+  .arch-center {
+    background: #ede9fe;
+    color: #5b21b6;
+    width: 1.6in; height: 1.6in;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-weight: 700;
+    font-size: 12pt;
+    margin: 0 auto;
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+
+<!-- 1. COVER -->
+<div class="slide cover">
+  <div class="icon-block">🍕</div>
+  <div class="right">
+    <h1>Pizza42 + Auth0</h1>
+    <p class="subtitle">Modern CIAM Architecture &amp; Pre-Sales Solution Presentation</p>
+    <p class="body">A technical walkthrough of how Pizza42 leverages Auth0 to deliver secure, frictionless customer identity — from Universal Login to scalable API authorization.</p>
+  </div>
+</div>
+
+<!-- 2. BUSINESS GOALS -->
+<div class="slide">
+  <h1>Business Goals</h1>
+  <p class="lede">Pizza42's leadership identified four priorities. Auth0 directly addresses each.</p>
+  <div class="grid-2" style="gap: 0.2in;">
+    <div class="card lav">
+      <div class="ico">🛡️</div>
+      <h3>Reduce Liability</h3>
+      <p>Offload credential management entirely — no passwords stored, no breach exposure.</p>
+    </div>
+    <div class="card peach">
+      <div class="ico">⚡</div>
+      <h3>Frictionless Login</h3>
+      <p>Enable social login, passkeys, and smooth onboarding experiences for every customer.</p>
+    </div>
+    <div class="card sky">
+      <div class="ico">🔐</div>
+      <h3>Modern Security</h3>
+      <p>Improve security posture with OAuth 2.0 and OIDC industry standards.</p>
+    </div>
+    <div class="card mint">
+      <div class="ico">📈</div>
+      <h3>Customer Enrichment</h3>
+      <p>Progressive profiling and social identity data enrich customer profiles to power personalized marketing.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>2</span></div>
+</div>
+
+<!-- 3. HIGH-LEVEL ARCHITECTURE -->
+<div class="slide">
+  <h1>High-Level Architecture</h1>
+  <p class="lede">One identity platform. Five purposeful components. Clear trust boundaries.</p>
+
+  <div class="flow-h">
+    <div class="node"><div class="circle">⚛️</div><div class="label">React SPA</div></div>
+    <div class="arrow">›</div>
+    <div class="node"><div class="circle">🚪</div><div class="label">Auth0 Login</div></div>
+    <div class="arrow">›</div>
+    <div class="node"><div class="circle">🔑</div><div class="label">Issue Tokens</div></div>
+    <div class="arrow">›</div>
+    <div class="node"><div class="circle">✅</div><div class="label">Validate JWTs</div></div>
+    <div class="arrow">›</div>
+    <div class="node"><div class="circle">🗄️</div><div class="label">Mgmt API (M2M)</div></div>
+  </div>
+
+  <div class="grid-4" style="margin-top: 0.25in;">
+    <div class="small-card"><span class="ico">⚛️</span><h4>React SPA</h4><p>Universal Login integration for secure, centralized auth.</p></div>
+    <div class="small-card"><span class="ico">🛠️</span><h4>Auth0 API</h4><p>Protects backend resources via JWT access tokens.</p></div>
+    <div class="small-card"><span class="ico">🤖</span><h4>M2M Application</h4><p>Isolated credentials for Management API access.</p></div>
+    <div class="small-card"><span class="ico">✨</span><h4>Post-Login Actions</h4><p>Custom claims injected at runtime for richer token payloads.</p></div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>3</span></div>
+</div>
+
+<!-- 4. WHY UNIVERSAL LOGIN -->
+<div class="slide">
+  <h1>Why Universal Login?</h1>
+  <p class="lede">The single biggest security and time-to-market lever in this architecture.</p>
+  <div class="grid-3" style="margin-top: 0.25in;">
+    <div class="card peach">
+      <div class="ico">🔒</div>
+      <h3>Zero Password Handling</h3>
+      <p>Pizza42 never touches customer credentials — Auth0 owns the entire authentication surface, removing PCI / breach exposure.</p>
+    </div>
+    <div class="card sky">
+      <div class="ico">🧰</div>
+      <h3>Built-In Security Features</h3>
+      <p>MFA, password reset, social login, and passkeys are available out of the box with no custom code.</p>
+    </div>
+    <div class="card mint">
+      <div class="ico">🚀</div>
+      <h3>Faster Time to Market</h3>
+      <p>Centralized auth reduces phishing risk and accelerates rollout — fully aligned with Auth0 best practices.</p>
+    </div>
+  </div>
+  <div class="callout-note">
+    Pizza42 customers see one consistent, branded login page — phishing-resistant and ready for passkeys today.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>4</span></div>
+</div>
+
+<!-- 5. OAUTH STRATEGY -->
+<div class="slide">
+  <h1>OAuth 2.0 &amp; OIDC Strategy</h1>
+  <p class="lede">Every flow choice is intentional. Aligned with current IETF OAuth 2.0 Security BCP.</p>
+  <div class="oauth-grid">
+    <div class="oauth-box">
+      <h4>🔑 Authorization Code + PKCE <span class="tag">SPA</span></h4>
+      <p>Used by the React SPA. PKCE prevents authorization-code interception in browsers — the modern standard for public clients.</p>
+    </div>
+    <div class="oauth-box">
+      <h4>👤 OIDC for Identity <span class="tag">User claims</span></h4>
+      <p>ID token carries who the user is — name, email, verified status — for personalized UI.</p>
+    </div>
+    <div class="oauth-box">
+      <h4>🛠️ OAuth 2.0 for API <span class="tag">Authz</span></h4>
+      <p>Access token carries what the user is allowed to do. Backend validates and enforces scopes.</p>
+    </div>
+    <div class="oauth-box">
+      <h4>🤖 Client Credentials <span class="tag">M2M</span></h4>
+      <p>Server-to-server credentials never leave the backend. Used only for privileged Management API operations.</p>
+    </div>
+  </div>
+  <div class="callout">
+    ❌ Implicit Flow and ROPC explicitly rejected — known vulnerabilities, deprecated by IETF.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>5</span></div>
+</div>
+
+<!-- 6. END-TO-END TOKEN FLOW -->
+<div class="slide">
+  <h1>End-to-End Token Flow</h1>
+  <p class="lede">Every step enforces a trust boundary. Privileged operations stay server-side.</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3in; margin-top: 0.3in;">
+    <div class="card lav">
+      <div class="ico">1️⃣</div>
+      <h3>User Authenticates</h3>
+      <p>React SPA redirects to Universal Login. User chooses email/password, Google, or Passkey. Auth0 handles credentials.</p>
+    </div>
+    <div class="card peach">
+      <div class="ico">2️⃣</div>
+      <h3>Auth0 Issues Tokens</h3>
+      <p>ID token to the SPA (identity), Access token to the backend (authorization). Both signed with RS256.</p>
+    </div>
+    <div class="card sky">
+      <div class="ico">3️⃣</div>
+      <h3>Backend Validates &amp; Updates</h3>
+      <p>API verifies JWT and scope. M2M token used to write order to Auth0 user profile via Management API.</p>
+    </div>
+  </div>
+
+  <div class="callout-note" style="margin-top: 0.35in;">
+    The SPA never directly accesses the Management API — all privileged operations flow through the validated backend, ensuring credentials and sensitive operations stay server-side.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>6</span></div>
+</div>
+
+<!-- 7. SECURITY CONTROLS -->
+<div class="slide">
+  <h1>Security Controls</h1>
+  <p class="lede">Defense in depth — multiple independent gates, each with one job.</p>
+  <div class="grid-3" style="margin-top: 0.2in;">
+    <div class="card sky">
+      <div class="ico">📜</div>
+      <h3>JWT Validation</h3>
+      <p>RS256 asymmetric signing verified via JWKS endpoint — no shared secrets.</p>
+    </div>
+    <div class="card lav">
+      <div class="ico">🎯</div>
+      <h3>Scope Enforcement</h3>
+      <p>Backend explicitly checks <code>create:orders</code> on every request — authentication + authorization, not just one.</p>
+    </div>
+    <div class="card mint">
+      <div class="ico">📧</div>
+      <h3>Email Verification</h3>
+      <p>Server-side gate via Management API — always current, prevents unverified orders even if UI is bypassed.</p>
+    </div>
+    <div class="card peach">
+      <div class="ico">🔐</div>
+      <h3>Secrets Isolation</h3>
+      <p>M2M client secrets never exposed to the browser — stored only in server environment variables.</p>
+    </div>
+    <div class="card rose">
+      <div class="ico">🔄</div>
+      <h3>Token Rotation</h3>
+      <p>Refresh-token rotation with reuse detection — leaked tokens invalidate the entire family.</p>
+    </div>
+    <div class="card sky">
+      <div class="ico">🛡️</div>
+      <h3>Tamper-proof Data</h3>
+      <p>Orders stored in <code>app_metadata</code> — no user-self-service scope exists, structurally unwritable from the browser.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>7</span></div>
+</div>
+
+<!-- 8. SCOPES VS RBAC -->
+<div class="slide">
+  <h1>Scopes vs. RBAC</h1>
+  <p class="lede">Start lean, scale to roles when the business needs it — no refactoring required.</p>
+  <div class="grid-2" style="margin-top: 0.3in;">
+    <div class="card sky">
+      <div class="ico">📌</div>
+      <h3>Today: Lightweight Scopes</h3>
+      <p style="margin-bottom: 0.1in;">PoC uses fine-grained scopes like <code>create:orders</code> — simple, explicit, enforced in backend middleware.</p>
+      <p>Ideal for single-persona applications where role complexity is low.</p>
+    </div>
+    <div class="card lav">
+      <div class="ico">📈</div>
+      <h3>Next: RBAC at Scale</h3>
+      <p style="margin-bottom: 0.1in;">As Pizza42 grows to support customer, staff, and admin personas, Auth0 RBAC turns on with a tenant-level toggle.</p>
+      <p>No frontend refactoring required — backend already checks both <code>scope</code> and <code>permissions</code> claims.</p>
+    </div>
+  </div>
+  <div class="callout">
+    ✅ Auth0 RBAC can be enabled at the tenant level with no frontend refactoring required.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>8</span></div>
+</div>
+
+<!-- 9. BUSINESS VALUE MAPPING -->
+<div class="slide">
+  <h1>Business Value Mapping</h1>
+  <p class="lede">One identity platform — value across every team Pizza42 cares about.</p>
+  <div class="grid-5" style="margin-top: 0.3in;">
+    <div class="small-card" style="background: linear-gradient(180deg,#f5f3ff,#fff);">
+      <span class="ico">🛡️</span>
+      <h4>Security</h4>
+      <p>Eliminates credential liability and reduces attack surface — zero password storage.</p>
+    </div>
+    <div class="small-card" style="background: linear-gradient(180deg,#fff7ed,#fff);">
+      <span class="ico">🚀</span>
+      <h4>Product</h4>
+      <p>Frictionless login, social sign-in, passkeys — drives conversion and retention.</p>
+    </div>
+    <div class="small-card" style="background: linear-gradient(180deg,#ecfdf5,#fff);">
+      <span class="ico">📊</span>
+      <h4>Marketing</h4>
+      <p>Progressive profiling enriches customer data over time — no friction at signup.</p>
+    </div>
+    <div class="small-card" style="background: linear-gradient(180deg,#eff6ff,#fff);">
+      <span class="ico">🛟</span>
+      <h4>Operations</h4>
+      <p>Fewer password reset tickets and self-service recovery reduce support burden.</p>
+    </div>
+    <div class="small-card" style="background: linear-gradient(180deg,#fff1f2,#fff);">
+      <span class="ico">🤖</span>
+      <h4>Future AI</h4>
+      <p>Rich identity data powers personalized reorder recommendations and GenAI experiences.</p>
+    </div>
+  </div>
+  <div class="callout-note" style="margin-top: 0.4in;">
+    Every stakeholder benefits from the same investment. That's why Auth0 is a platform decision, not a feature decision.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>9</span></div>
+</div>
+
+<!-- 10. PRODUCTION ROADMAP -->
+<div class="slide">
+  <h1>Production Roadmap</h1>
+  <p class="lede">A phased plan from PoC to enterprise-scale deployment.</p>
+  <div style="margin-top: 0.25in;">
+    <div class="roadmap-row">
+      <div class="roadmap-num">1</div>
+      <div>
+        <h4>Phase 1 — Data Foundation</h4>
+        <p>Migrate orders to a dedicated production database. <code>user_metadata</code> mirrors a thin summary for token use.</p>
+      </div>
+    </div>
+    <div class="roadmap-row">
+      <div class="roadmap-num">2</div>
+      <div>
+        <h4>Phase 2 — Brand &amp; Token Hardening</h4>
+        <p>Custom Auth0 domain (auth.pizza42.com) for brand consistency. Refresh-token rotation with reuse detection on.</p>
+      </div>
+    </div>
+    <div class="roadmap-row">
+      <div class="roadmap-num">3</div>
+      <div>
+        <h4>Phase 3 — Adaptive Risk</h4>
+        <p>Adaptive MFA + breached-password detection + anomaly detection — respond to real-time risk signals.</p>
+      </div>
+    </div>
+    <div class="roadmap-row">
+      <div class="roadmap-num">4</div>
+      <div>
+        <h4>Phase 4 — Observability &amp; Scale</h4>
+        <p>Auth0 log streams to SIEM. Progressive profiling Action drives marketing enrichment. Passkeys default for new signups.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>10</span></div>
+</div>
+
+<!-- 11. DEMO WALKTHROUGH -->
+<div class="slide">
+  <h1>Demo Walkthrough</h1>
+  <p class="lede">What you'll see live, in roughly 20 minutes.</p>
+  <div style="margin-top: 0.25in;">
+    <div class="demo-step">
+      <div class="num">01</div>
+      <h4>Signup &amp; Email Verification</h4>
+      <p>New user registration via Universal Login. Server-side verification gate blocks orders until email is confirmed.</p>
+    </div>
+    <div class="demo-step">
+      <div class="num">02</div>
+      <h4>Order Placement Flow</h4>
+      <p>Authenticated SPA submits an order with the access token. Backend validates JWT, scope, and email status before persisting.</p>
+    </div>
+    <div class="demo-step">
+      <div class="num">03</div>
+      <h4>JWT Inspection</h4>
+      <p>Decode and inspect token claims, audience, issuer, and enforced scopes live. Custom claim shows recent orders &amp; marketing profile.</p>
+    </div>
+    <div class="demo-step">
+      <div class="num">04</div>
+      <h4>Social Login &amp; Dashboard Tour</h4>
+      <p>One-click Google login skips the verification step entirely. Auth0 dashboard tour shows API record, M2M app, and Post-Login Action.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>11</span></div>
+</div>
+
+<!-- 12. KEY TAKEAWAYS -->
+<div class="slide">
+  <h1>Key Takeaways</h1>
+  <p class="lede">What Pizza42 walks away with.</p>
+  <div class="grid-2" style="margin-top: 0.3in;">
+    <div class="card lav">
+      <div class="ico">🏗️</div>
+      <h3>Best-Practice Architecture</h3>
+      <p>Built on Auth0's recommended patterns — PKCE, Universal Login, M2M isolation, JWT validation. Actions (not deprecated Rules).</p>
+    </div>
+    <div class="card peach">
+      <div class="ico">⚖️</div>
+      <h3>UX + Security in Balance</h3>
+      <p>Passkeys and social login deliver a smooth experience without compromising security posture.</p>
+    </div>
+    <div class="card mint">
+      <div class="ico">📈</div>
+      <h3>Enterprise-Scale Foundation</h3>
+      <p>Scopes-to-RBAC upgrade path, log streaming, adaptive MFA — ready to activate at scale.</p>
+    </div>
+    <div class="card sky">
+      <div class="ico">🤝</div>
+      <h3>Built for All Stakeholders</h3>
+      <p>Technical depth for architects. Clear business value mapping for product, marketing, and executive teams.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>12</span></div>
+</div>
+
+<!-- 13. ARCHITECTURE FLOW DIAGRAM -->
+<div class="slide">
+  <h1>Architecture Flow Diagram</h1>
+  <p class="lede">Every trust boundary is enforced. Privileged operations stay server-side.</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1.4in 1fr; gap: 0.3in; align-items: center; margin-top: 0.2in;">
+    <div>
+      <div class="card sky" style="margin-bottom: 0.18in;">
+        <div class="ico">⚛️</div>
+        <h3>React SPA (PKCE)</h3>
+        <p>Browser client uses Authorization Code + PKCE via Universal Login.</p>
+      </div>
+      <div class="card mint">
+        <div class="ico">🛠️</div>
+        <h3>Backend API</h3>
+        <p>Validates RS256 JWT via JWKS and enforces <code>create:orders</code>.</p>
+      </div>
+    </div>
+    <div>
+      <div class="arch-center">End-to-end<br/>Auth<br/>Architecture</div>
+    </div>
+    <div>
+      <div class="card peach" style="margin-bottom: 0.18in;">
+        <div class="ico">🤖</div>
+        <h3>Management API (M2M)</h3>
+        <p>Accessed via Client Credentials for privileged user-record operations.</p>
+      </div>
+      <div class="card lav">
+        <div class="ico">🌐</div>
+        <h3>Auth0 Identity Layer</h3>
+        <p>Issues ID/access tokens and runs Post-Login Actions for custom claims.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-note">
+    The SPA delegates authentication to Auth0, the backend validates every token independently, and privileged Management API access is fully isolated behind server-side M2M credentials.
+  </div>
+  <div class="footer"><span>Pizza42 + Auth0</span><span>13</span></div>
+</div>
+
+</body>
+</html>

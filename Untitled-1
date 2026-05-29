@@ -1,0 +1,37 @@
+{
+  "iss": "https://apnagra.us.auth0.com/",
+  "sub": "google-oauth2|117679124118974227110",
+  "aud": "PXtYKMLelP3t54ylgplcij8uKYfrqo52",   ← the SPA client_id
+  "name": "Amarpreet Nagra",
+  "given_name": "Amarpreet",
+  "email": "apnagra24@gmail.com",
+  "email_verified": true,
+  "picture": "https://lh3.googleusercontent.com/...",
+  "nickname": "apnagra24",
+  "https://pizza42.com/orders": [...],            ← from Action
+  "https://pizza42.com/marketing_profile": {...}, ← from Action
+  "iat": 1748373447,
+  "exp": 1748459847
+}
+Access token payload (used by the API):
+
+
+{
+  "iss": "https://apnagra.us.auth0.com/",
+  "sub": "google-oauth2|117679124118974227110",
+  "aud": "https://pizza42-api",                    ← the API identifier
+  "azp": "PXtYKMLelP3t54ylgplcij8uKYfrqo52",
+  "scope": "openid profile email create:orders",
+  "iat": 1748373447,
+  "exp": 1748459847,
+  "gty": "authorization_code"
+}
+
+
+starting with:
+
+1. Why Pizza42 Uses Three Applications
+2. OAuth Flows
+3. Tokens
+4. Security Controls
+5. Key Takeaways

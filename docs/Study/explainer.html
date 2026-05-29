@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pizza 42 — How It All Works</title>
+<style>
+  @page { size: Letter; margin: 0.75in; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937;
+    line-height: 1.6;
+    font-size: 11pt;
+    max-width: 7in;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 22pt;
+    margin: 0 0 0.1in 0;
+    color: #d63384;
+    border-bottom: 3px solid #d63384;
+    padding-bottom: 6px;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #d63384;
+    margin: 0.35in 0 0.1in 0;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    color: #1f2937;
+    margin: 0.2in 0 0.06in 0;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 11pt;
+    color: #4b5563;
+    margin: 0.15in 0 0.05in 0;
+    font-weight: 700;
+  }
+  p { margin: 0.06in 0; }
+  ul, ol { margin: 0.06in 0; padding-left: 0.3in; }
+  li { margin: 2px 0; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #f4f4f4;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10pt;
+  }
+  pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #1f2937;
+    color: #ffb38a;
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 9.5pt;
+    line-height: 1.45;
+    page-break-inside: avoid;
+    margin: 0.1in 0;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.1in 0;
+    page-break-inside: avoid;
+    font-size: 10pt;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 9px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  th { background: #fafafa; font-weight: 700; }
+
+  .meta { color: #6b7280; font-size: 10pt; }
+  .callout {
+    background: #fff8e1;
+    border-left: 4px solid #f0c000;
+    padding: 10px 14px;
+    margin: 0.12in 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 10.5pt;
+  }
+  .note {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 10px 14px;
+    margin: 0.12in 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 10.5pt;
+  }
+  .warn {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 10px 14px;
+    margin: 0.12in 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 10.5pt;
+  }
+  .ok {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    padding: 10px 14px;
+    margin: 0.12in 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 10.5pt;
+  }
+  .toc {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.15in 0.25in;
+    margin: 0.15in 0 0.25in 0;
+  }
+  .toc h2 { margin-top: 0; }
+  .toc ol { padding-left: 0.25in; }
+  .toc li { margin: 4px 0; font-size: 11pt; }
+  .seq {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 0.12in 0;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  .pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: #ede9fe;
+    color: #5b21b6;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+  .pill.ok { background: #d1fae5; color: #065f46; }
+  .pill.warn { background: #fef3c7; color: #92400e; }
+  .pill.ko { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<h1>Pizza 42 — How It All Works</h1>
+<p class="meta">A complete walkthrough of the architecture, the design decisions, and what happens behind the scenes for every user action.</p>
+
+<div class="toc">
+<h2>What's in this doc</h2>
+<ol>
+  <li>The big picture in one paragraph</li>
+  <li>The cast of characters — every component, what it does, why it's there</li>
+  <li>Three tokens, three jobs — ID, Access, Refresh</li>
+  <li>The user journeys — what happens when…</li>
+  <li>The data system — where state lives and how it moves</li>
+  <li>The Action — how the token gets shaped</li>
+  <li>The M2M app — the privileged second identity</li>
+  <li>Every design decision and why we made it</li>
+  <li>The gotchas we hit (and how we fixed them)</li>
+  <li>What this PoC does <em>differently</em> from a textbook OAuth demo</li>
+  <li>Glossary</li>
+</ol>
+</div>
+
+<h2>1. The big picture in one paragraph</h2>
+<p>
+  Pizza 42 is a single-page React app for ordering pizza. We do not store customer credentials — Auth0 does. The user logs in through Auth0's Universal Login (email/password, Google, or passkey). After login, our React app calls our own backend at <code>/api/orders</code> to place an order. The backend verifies the user's token, checks they have the right permission, confirms their email is verified by calling Auth0's Management API, then saves the order — also through the Management API — onto the user's record at Auth0. The next time the user logs in (or even just switches browser tabs), an Auth0 Action runs and copies the order history into the user's ID token as a custom claim. The React app reads the claim and renders the history. No database of our own, no passwords, no session cookies — Auth0 is the source of truth for identity <em>and</em> a stand-in customer database for this PoC.
+</p>
+
+<h2>2. The cast of characters</h2>
+
+<table>
+  <tr><th>Component</th><th>Type</th><th>What it does</th><th>Why it's there</th></tr>
+  <tr>
+    <td><b>React SPA</b></td>
+    <td>Public client</td>
+    <td>The Pizza 42 UI customers interact with. Initiates Universal Login, holds tokens, calls the backend.</td>
+    <td>Single-page apps are how modern customer-facing apps are built. Easy to host, fast to load.</td>
+  </tr>
+  <tr>
+    <td><b>Pizza 42 (Auth0 SPA app)</b></td>
+    <td>OAuth client record</td>
+    <td>Tells Auth0 what's allowed: which redirect URLs, which grants, what scopes.</td>
+    <td>Auth0 needs an entry for every client that talks to it. This is the SPA's identity in Auth0.</td>
+  </tr>
+  <tr>
+    <td><b>Pizza 42 API</b></td>
+    <td>OAuth resource server record</td>
+    <td>Declares the API's identifier (<code>https://pizza42-api</code>) and which scopes it protects (<code>create:orders</code>).</td>
+    <td>Without this record, Auth0 won't issue meaningful access tokens — they'd be opaque <code>/userinfo</code> tokens not usable by our backend.</td>
+  </tr>
+  <tr>
+    <td><b>Vercel serverless backend</b></td>
+    <td>Resource server (the actual code)</td>
+    <td>Validates user JWTs, enforces scope, checks <code>email_verified</code>, persists orders and profile via Mgmt API.</td>
+    <td>This is where real authorization decisions live. Client-side checks are advisory; the server is authoritative.</td>
+  </tr>
+  <tr>
+    <td><b>Pizza 42 Backend (M2M app)</b></td>
+    <td>OAuth confidential client</td>
+    <td>The backend's <em>own</em> identity in Auth0. Used to call the Management API. Holds a client secret.</td>
+    <td>The SPA can't call the Management API directly — it's too privileged. The M2M app gives the backend its own credentials for server-only operations.</td>
+  </tr>
+  <tr>
+    <td><b>Google social connection</b></td>
+    <td>Identity provider</td>
+    <td>Lets users sign in with their Google account.</td>
+    <td>One-click signup, pre-verified email. Removes a step from the user's first experience.</td>
+  </tr>
+  <tr>
+    <td><b>Database connection</b></td>
+    <td>Identity provider</td>
+    <td>Email/password and passkeys. Auth0 stores the hashed credentials.</td>
+    <td>Required for users who don't want to use Google. Passkeys give us the password-free experience.</td>
+  </tr>
+  <tr>
+    <td><b>Post-Login Action</b></td>
+    <td>Custom Node.js code</td>
+    <td>Runs on every login. Reads <code>app_metadata.orders</code> and <code>user_metadata.marketingProfile</code> and adds them as custom claims on the ID token.</td>
+    <td>Auth0 strips non-standard claims from tokens unless code explicitly adds them. The Action is the supported extensibility point. Rules and Hooks are deprecated.</td>
+  </tr>
+</table>
+
+<div class="callout">
+<b>Mental shortcut:</b> Three OAuth clients (SPA, M2M, API record), two identity providers (Google + Database), one Action. Five moving parts.
+</div>
+
+<h2>3. Three tokens, three jobs</h2>
+
+<p>The most important concept in this entire system is that <strong>tokens are not interchangeable</strong>. Three different tokens are issued, each for a different consumer.</p>
+
+<table>
+  <tr><th>Token</th><th>Format</th><th>Who consumes it</th><th>What it's for</th><th>Where it lives</th></tr>
+  <tr>
+    <td><b>ID Token</b></td>
+    <td>JWT (OIDC standard)</td>
+    <td>The React SPA</td>
+    <td>"Who is the user?" — name, email, picture, <code>email_verified</code>, custom claims (orders, marketing profile).</td>
+    <td>localStorage in the browser. Never sent to our backend.</td>
+  </tr>
+  <tr>
+    <td><b>Access Token</b></td>
+    <td>JWT (RS256-signed)</td>
+    <td>Our backend API</td>
+    <td>"What can the user do?" — bearer credential the backend verifies. Carries the <code>scope</code> claim.</td>
+    <td>localStorage in the browser. Sent in <code>Authorization: Bearer</code> header to <code>/api/orders</code> and <code>/api/profile</code>.</td>
+  </tr>
+  <tr>
+    <td><b>Refresh Token</b></td>
+    <td>Opaque string</td>
+    <td>Auth0's <code>/oauth/token</code> endpoint</td>
+    <td>"Get me fresh tokens without making the user log in again." Used by the SPA when the tab regains focus or the access token nears expiry.</td>
+    <td>localStorage in the browser. Sent only to Auth0, never to our backend.</td>
+  </tr>
+</table>
+
+<h3>Why three?</h3>
+<ul>
+  <li><strong>Different audiences.</strong> ID token <code>aud</code> = the SPA's client ID. Access token <code>aud</code> = the API identifier. Mixing them violates "one token per resource."</li>
+  <li><strong>Different sensitivity.</strong> The refresh token is the keys-to-the-kingdom and should never be sent anywhere except Auth0's token endpoint.</li>
+  <li><strong>Different lifetimes.</strong> Access tokens are short (~24h default). ID tokens are session-length. Refresh tokens can live for weeks (with rotation, each use invalidates the previous one).</li>
+</ul>
+
+<h3>What's in our access token (default)</h3>
+<pre>{
+  "iss": "https://apnagra.us.auth0.com/",
+  "sub": "google-oauth2|117679124118974227110",
+  "aud": "https://pizza42-api",
+  "azp": "PXtYKMLelP3t54ylgplcij8uKYfrqo52",
+  "scope": "openid profile email create:orders",
+  "iat": 1748373447,
+  "exp": 1748459847,
+  "gty": "authorization_code"
+}</pre>
+<p>Note: <em>no</em> identity data — no email, no name, no <code>email_verified</code>. By design.</p>
+
+<h3>What's in our ID token (after Action runs)</h3>
+<pre>{
+  "iss": "https://apnagra.us.auth0.com/",
+  "sub": "google-oauth2|117679124118974227110",
+  "aud": "PXtYKMLelP3t54ylgplcij8uKYfrqo52",
+  "name": "Amarpreet Nagra",
+  "email": "apnagra24@gmail.com",
+  "email_verified": true,
+  "picture": "https://...",
+  "https://pizza42.com/orders": [...],            ← added by Action
+  "https://pizza42.com/marketing_profile": {...}, ← added by Action
+  "iat": 1748373447,
+  "exp": 1748459847
+}</pre>
+
+<h2>4. The user journeys</h2>
+
+<h3>Journey 1 — First-time signup with email/password</h3>
+<div class="seq">User clicks "Sign up"
+  → SPA calls loginWithRedirect({ screen_hint: "signup" })
+  → Browser redirects to Auth0 Universal Login (signup form)
+  → User submits email + password
+  → Auth0 creates user record (email_verified = false)
+  → Auth0 emails verification link
+  → Auth0 redirects to http://localhost:3000/?code=...
+  → SPA exchanges code + PKCE verifier for tokens
+  → SPA loads dashboard
+       - Order button: DISABLED (banner says "verify email")
+       - History: empty</div>
+
+<h3>Journey 2 — Verifying email mid-session</h3>
+<div class="seq">User opens email in another tab, clicks verification link
+  → Auth0 flips user's email_verified = true in the database
+       (The cached token in the Pizza 42 tab still says false.)
+User switches back to Pizza 42 tab
+  → window 'focus' event fires
+  → useEffect handler calls getAccessTokenSilently({ cacheMode: "off" })
+  → SDK POSTs the refresh token to /oauth/token
+  → Auth0 RE-RUNS the Post-Login Action
+  → Auth0 issues new ID + access tokens with email_verified = true
+  → SDK swaps cached tokens in localStorage
+  → React re-renders
+       - Banner disappears
+       - Order button: ENABLED</div>
+
+<h3>Journey 3 — Placing an order</h3>
+<div class="seq">User picks "Margherita" and clicks "Place Order"
+  → SPA calls getAccessTokenSilently() → returns cached access token
+  → SPA → POST /api/orders
+       Headers: Authorization: Bearer &lt;access token&gt;
+       Body: { item: "Margherita", price: 12 }
+
+Backend (api/orders.js):
+  1. jwtVerify(token) — checks signature, issuer, audience, expiry
+  2. payload.scope.includes("create:orders") — authorization check
+  3. getManagementToken() — Client Credentials grant
+       POST /oauth/token { client_id, client_secret, grant_type: "client_credentials" }
+       → returns M2M access token (cached in memory)
+  4. GET /api/v2/users/{sub} with M2M token
+       → returns user record { email_verified, app_metadata: { orders: [...] }, ... }
+  5. if (!userRecord.email_verified) return 403
+  6. orders = [...existing, newOrder]
+  7. PATCH /api/v2/users/{sub} { app_metadata: { orders } }
+  8. Return 200 { order, orders }
+
+User sees "Order placed!" but history doesn't update yet — the cached
+ID token doesn't have the new order. Same fix as Journey 2: switch tabs.</div>
+
+<h3>Journey 4 — Editing the marketing profile</h3>
+<div class="seq">User fills out "Tell us about you" → clicks Save
+  → SPA → POST /api/profile { favoriteItem, dietary, ... }
+
+Backend (api/profile.js):
+  1. jwtVerify(token) — same JWT check
+       (No scope check — anyone logged in can edit their own profile)
+  2. Sanitize input — whitelist allowed fields
+  3. getManagementToken() — reuse cached if still valid
+  4. GET user → read existing marketingProfile
+  5. Merge: marketingProfile = { ...existing, ...incoming, updatedAt: now }
+  6. PATCH user { user_metadata: { marketingProfile } }
+  7. Return 200
+
+User switches tabs, returns → refresh-token call → Action re-runs →
+new ID token has updated marketing_profile claim → UI shows new values.</div>
+
+<h3>Journey 5 — Logging in with Google</h3>
+<div class="seq">User clicks "Continue with Google"
+  → Auth0 redirects to Google OAuth consent
+  → User approves
+  → Google returns to Auth0 with profile data
+  → Auth0 creates/updates user (sub = "google-oauth2|...")
+       email_verified = true (Google vouches for it)
+  → Post-Login Action runs (orders + marketing_profile injected)
+  → Auth0 redirects to Pizza 42 with code
+  → SPA exchanges code for tokens
+  → User lands on dashboard with email already verified.</div>
+
+<h2>5. The data system — where state lives and how it moves</h2>
+
+<h3>Three buckets, three owners</h3>
+<table>
+  <tr><th>Bucket</th><th>Lives in</th><th>Owner</th><th>What we store there</th></tr>
+  <tr>
+    <td><code>app_metadata</code></td>
+    <td>Auth0 user record</td>
+    <td>Backend only</td>
+    <td><code>orders</code> — system-owned, tamper-proof</td>
+  </tr>
+  <tr>
+    <td><code>user_metadata</code></td>
+    <td>Auth0 user record</td>
+    <td>Backend or user (via specific scope)</td>
+    <td><code>marketingProfile</code> — user-editable preferences</td>
+  </tr>
+  <tr>
+    <td>Standard profile</td>
+    <td>Auth0 user record</td>
+    <td>Auth0 / identity provider</td>
+    <td>name, email, picture, <code>email_verified</code> — set by Auth0 itself</td>
+  </tr>
+</table>
+
+<h3>Why orders go in <code>app_metadata</code>, not <code>user_metadata</code></h3>
+<ul>
+  <li>Auth0 exposes a scope called <code>update:current_user_metadata</code> that a SPA can request to let users edit their own <code>user_metadata</code> directly from the browser.</li>
+  <li>There is <strong>no equivalent</strong> scope for <code>app_metadata</code> — it can only be written via a backend with M2M credentials.</li>
+  <li>Orders are <em>system-owned</em> facts: the kitchen creates them, not the user. They must be tamper-proof.</li>
+  <li>By putting orders in <code>app_metadata</code>, even if a future engineer adds the <code>update:current_user_metadata</code> scope (e.g. to let users edit their saved address), order history stays safe.</li>
+</ul>
+
+<h3>Why PATCH replaces, doesn't merge</h3>
+<p>This is a subtle gotcha. The Auth0 Management API's PATCH operation <em>replaces</em> sub-objects rather than deep-merging. If our backend sent <code>{ app_metadata: { orders: [...] } }</code> without first reading the existing <code>app_metadata</code>, we'd wipe out any other fields stored there.</p>
+
+<p>So every write follows a read-modify-write pattern:</p>
+<pre>const userRecord = await getUser(sub, mgmtToken);
+const existing = userRecord.app_metadata?.orders ?? [];
+const orders = [...existing, newOrder];
+await patchUser(sub, {
+  app_metadata: { ...userRecord.app_metadata, orders }
+}, mgmtToken);</pre>
+
+<div class="warn">
+<b>Race condition:</b> two concurrent orders both read the same <code>existing</code>, both append, second write wins → one order lost. In production we'd use a real database with transactional writes. Mentioning this in the panel demonstrates depth.
+</div>
+
+<h2>6. The Action — how the token gets shaped</h2>
+
+<p>The Auth0 Post-Login Action is the only place in our system that can modify the ID token. Tokens are signed by Auth0's private key — the SPA and our backend can read tokens but can never alter them without breaking the signature.</p>
+
+<h3>The full Action code</h3>
+<pre>exports.onExecutePostLogin = async (event, api) =&gt; {
+  const orders = event.user.app_metadata?.orders ?? [];
+  const marketing = event.user.user_metadata?.marketingProfile ?? null;
+  api.idToken.setCustomClaim("https://pizza42.com/orders", orders);
+  api.idToken.setCustomClaim(
+    "https://pizza42.com/marketing_profile",
+    marketing,
+  );
+};</pre>
+
+<h3>When does it run?</h3>
+<ul>
+  <li>Every fresh login (email/password, social, passkey)</li>
+  <li>Every refresh-token exchange (this is why the focus listener works — it triggers a refresh-token call, which re-runs the Action)</li>
+  <li>NOT on the order placement HTTP request — Actions only fire on auth lifecycle events, not on arbitrary API calls</li>
+</ul>
+
+<h3>Why claims must be namespaced</h3>
+<p>OIDC reserves the short names (<code>name</code>, <code>email</code>, <code>sub</code>, <code>iat</code>, etc.) for standard or future use. Custom claims must be URI-namespaced or Auth0 will <strong>silently strip them</strong> — no error, no warning. That's why our claim names look like URLs: <code>https://pizza42.com/orders</code>. The URL doesn't have to resolve; it's just a unique label.</p>
+
+<div class="warn">
+<b>The silent-drop trap:</b> If you forget the namespace, the Action runs successfully, the token is issued, the claim just isn't there. One of the most time-wasting bugs in Auth0. Always namespace, always check the decoded token after deploying an Action.
+</div>
+
+<h3>Rules and Hooks are dead</h3>
+<table>
+  <tr><th>Feature</th><th>Status</th></tr>
+  <tr><td>Actions (what we use)</td><td><span class="pill ok">Current</span></td></tr>
+  <tr><td>Rules</td><td><span class="pill ko">EOL Nov 18, 2026 — unavailable to tenants created after Oct 16, 2023</span></td></tr>
+  <tr><td>Hooks</td><td><span class="pill ko">Same EOL</span></td></tr>
+</table>
+<p>Half the older public Pizza 42 reference repos still demonstrate Rules. Copying those without modernizing would be an instant credibility red flag for an identity-specialist role.</p>
+
+<h2>7. The M2M app — the privileged second identity</h2>
+
+<p>The Pizza 42 Backend (M2M) app exists for one reason: to give our backend its own credentials to call Auth0's Management API. Without it, the backend could verify user tokens but couldn't read or write user records.</p>
+
+<h3>Why a separate app, not part of the SPA</h3>
+<ul>
+  <li><strong>Credential isolation.</strong> The SPA cannot safely hold a client secret — anyone can view its JavaScript. The M2M app's secret lives in server-only env vars.</li>
+  <li><strong>Different grant.</strong> The SPA uses Authorization Code + PKCE (user is present). The M2M app uses Client Credentials (no user). Auth0 doesn't allow mixing grants in one app record.</li>
+  <li><strong>Least privilege.</strong> The M2M app is authorized for specific Management API scopes (<code>read:users</code>, <code>update:users_app_metadata</code>, etc.). It has no other powers. Leaking its credentials would let an attacker modify user records but not, say, change tenant settings.</li>
+  <li><strong>Audit clarity.</strong> Auth0 logs every Management API call and tags it with the app that made it. Mixing the SPA and the backend would muddy investigations.</li>
+</ul>
+
+<h3>The Client Credentials grant</h3>
+<pre>POST https://apnagra.us.auth0.com/oauth/token
+{
+  "client_id": "...",
+  "client_secret": "...",
+  "audience": "https://apnagra.us.auth0.com/api/v2/",
+  "grant_type": "client_credentials"
+}
+
+→ Returns a Management API access token (~24h lifetime)</pre>
+
+<p>We cache the returned token in memory in the serverless function. The first order in a fresh function instance pays the cost of one extra round-trip; subsequent orders skip it.</p>
+
+<h2>8. Every design decision and why we made it</h2>
+
+<table>
+  <tr><th>Decision</th><th>Why</th></tr>
+  <tr>
+    <td>Universal Login (not embedded)</td>
+    <td>Pizza 42 never touches passwords. MFA, password reset, social, passkeys are all turn-key. Tradeoff: less branding control (mitigated by Auth0's customization options).</td>
+  </tr>
+  <tr>
+    <td>Authorization Code + PKCE (not Implicit or ROPC)</td>
+    <td>Only safe grant for browser apps. PKCE protects against auth-code interception. Implicit puts tokens in URLs (deprecated). ROPC requires the app to see the password (defeats the whole point).</td>
+  </tr>
+  <tr>
+    <td>Refresh tokens with rotation</td>
+    <td>Iframe silent renew is blocked by third-party cookie restrictions in Chrome/Safari/Brave. Refresh tokens use back-channel POSTs — work everywhere. Rotation invalidates the previous token on each use; reuse signals a breach.</td>
+  </tr>
+  <tr>
+    <td>Plain scopes (not RBAC)</td>
+    <td>Single-persona PoC. <code>create:orders</code> is enough. Easy to upgrade later — backend already checks both <code>scope</code> and <code>permissions</code> claims.</td>
+  </tr>
+  <tr>
+    <td>Orders in <code>app_metadata</code></td>
+    <td>System-owned, tamper-proof. <code>user_metadata</code> has the <code>update:current_user_metadata</code> escape hatch; <code>app_metadata</code> doesn't.</td>
+  </tr>
+  <tr>
+    <td>Marketing profile in <code>user_metadata</code></td>
+    <td>User-owned data (favorite pizza, dietary prefs). Users should be able to edit their own preferences.</td>
+  </tr>
+  <tr>
+    <td><code>email_verified</code> via live Mgmt API lookup (not token claim)</td>
+    <td>The token would be a stale snapshot from login. A user who verifies mid-session would be blocked until they re-login. The live lookup costs one extra HTTP call (which the backend was making anyway to save the order) and gives always-current state.</td>
+  </tr>
+  <tr>
+    <td>Tab-focus listener for silent re-auth</td>
+    <td>Refresh tokens don't auto-fire on their own — they fire on demand. A focus listener calls <code>getAccessTokenSilently({ cacheMode: "off" })</code> when the user returns to the tab, picking up any state changes (verified email, new orders, updated profile).</td>
+  </tr>
+  <tr>
+    <td>Actions over Rules</td>
+    <td>Rules are EOL. New tenants can't even use them.</td>
+  </tr>
+  <tr>
+    <td>Namespaced custom claims</td>
+    <td>Auth0 silently strips non-namespaced claims. The namespace doesn't need to resolve.</td>
+  </tr>
+</table>
+
+<h2>9. The gotchas we hit (and how we fixed them)</h2>
+
+<table>
+  <tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+  <tr><td><code>Callback URL mismatch</code></td><td>Auth0 SPA app didn't have <code>http://localhost:3000</code> in Allowed Callback URLs</td><td>Add it. The SDK uses <code>window.location.origin</code>, not <code>/callback</code>.</td></tr>
+  <tr><td><code>Service not found: https://pizza42-api</code></td><td>The API record didn't exist in Auth0</td><td>Create the API with that exact identifier.</td></tr>
+  <tr><td><code>Client is not authorized to access resource server</code></td><td>API used per-app authorization, SPA wasn't granted access</td><td>API → Application Access tab → grant the SPA + the <code>create:orders</code> scope.</td></tr>
+  <tr><td><code>Missing required scope: create:orders</code></td><td>Scope wasn't checked in API Access tab for the SPA</td><td>Same fix — explicit permission grant on API Access tab.</td></tr>
+  <tr><td><code>401 fetch failed</code> in backend logs</td><td>Backend env vars weren't loaded by <code>vercel dev</code> after linking</td><td>Add env vars to the Vercel project via <code>vercel env add</code>.</td></tr>
+  <tr><td>Order history doesn't update after placing an order</td><td>ID token cached in localStorage doesn't include the new order</td><td>Focus listener + refresh token + Action re-run on every silent renew.</td></tr>
+  <tr><td>Button stays disabled after verifying email</td><td>Same staleness — cached token says <code>email_verified=false</code></td><td>Same fix — focus listener.</td></tr>
+  <tr><td>Marketing profile claim missing from token</td><td>Action wasn't redeployed after we added the second claim line</td><td>Update Action body in dashboard → click Deploy.</td></tr>
+  <tr><td>Google profile picture broken on the page</td><td>Google blocks <code>lh3.googleusercontent.com</code> requests with certain Referer headers</td><td>Add <code>referrerPolicy="no-referrer"</code> to the <code>&lt;img&gt;</code>. Fall back to initials.</td></tr>
+  <tr><td>Consent screen every login</td><td>Auth0 forces user consent on <code>localhost</code> as anti-phishing</td><td>Disappears automatically on the deployed HTTPS URL.</td></tr>
+</table>
+
+<h2>10. What this PoC does differently from a textbook OAuth demo</h2>
+
+<p>Anyone can wire up Universal Login and call it done. The interesting parts are where we made considered choices, often pushing back on the brief.</p>
+
+<h3>We disagreed with the spec on three points</h3>
+<ol>
+  <li>The PDF said "put orders in the ID token." We did — but capped at the natural size where it stops being a token concern and starts being a database concern. In production we'd put only a summary (<code>orderCount</code>, <code>lastOrderAt</code>) in the token and fetch the full list from <code>/api/orders</code>.</li>
+  <li>The PDF said "save orders to user's Auth0 profile." We did, but in <code>app_metadata</code> (tamper-proof) not the more obvious <code>user_metadata</code>. The reasoning is real: in production the source of truth would be our own database, with Auth0 mirroring only a thin summary.</li>
+  <li>The PDF implied a client-side email-verified gate. We did that for UX, but the actual security gate is on the backend via a live Mgmt API lookup — not a token claim, which would be stale.</li>
+</ol>
+
+<h3>We built the mid-session freshness fix</h3>
+<p>Most demos require a logout/login cycle to pick up state changes. We added a focus listener that triggers a refresh-token call when the user returns to the tab. The Action re-runs, the ID token refreshes, the UI updates — all without the user doing anything. <em>"The token is the cache, refresh-token-on-focus keeps it warm."</em></p>
+
+<h3>We chose Actions on purpose</h3>
+<p>We didn't just use Actions because that's what we know — we chose them because Rules are EOL and unavailable to new tenants. Calling this out signals platform awareness.</p>
+
+<h3>We considered passkeys as a deliberate product decision</h3>
+<p>Pizza 42 is impulse-buy. Every friction point costs conversion. Passkeys eliminate password entry on supported devices and are phishing-resistant by design — they hit security and UX at the same time. Not just a "checkbox enabled" feature.</p>
+
+<h2>11. Glossary</h2>
+
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td><b>SPA</b></td><td>Single-Page Application. Our React frontend.</td></tr>
+  <tr><td><b>M2M</b></td><td>Machine-to-Machine. An OAuth client with no user — used for server-to-server calls.</td></tr>
+  <tr><td><b>OIDC</b></td><td>OpenID Connect. The identity layer built on top of OAuth 2.0. Defines the ID token and standard claims.</td></tr>
+  <tr><td><b>JWT</b></td><td>JSON Web Token. A self-contained, cryptographically signed token format.</td></tr>
+  <tr><td><b>JWKS</b></td><td>JSON Web Key Set. The public keys Auth0 publishes so our backend can verify token signatures.</td></tr>
+  <tr><td><b>RS256</b></td><td>RSA-SHA256. The asymmetric signing algorithm — Auth0 signs with private key, we verify with public key from JWKS. No shared secret.</td></tr>
+  <tr><td><b>PKCE</b></td><td>Proof Key for Code Exchange. An extension to Authorization Code that protects public clients (SPAs) from code-interception attacks. Replaces the client secret with a one-time crypto challenge.</td></tr>
+  <tr><td><b>Authorization Code grant</b></td><td>The OAuth flow where the user is redirected to the IdP, authenticates, and is sent back with a short-lived code that the client exchanges for tokens.</td></tr>
+  <tr><td><b>Client Credentials grant</b></td><td>OAuth flow for M2M — client identifies itself with id+secret, no user involved.</td></tr>
+  <tr><td><b>Resource server</b></td><td>OAuth term for an API protected by access tokens. In our case, our backend at <code>/api/orders</code>.</td></tr>
+  <tr><td><b>Audience</b></td><td>The <code>aud</code> claim in a token. Tells the resource server "this token is meant for you, not someone else."</td></tr>
+  <tr><td><b>Scope</b></td><td>A permission string. Our API declares <code>create:orders</code>. The token's <code>scope</code> claim lists which scopes were granted.</td></tr>
+  <tr><td><b>Action</b></td><td>Auth0's current extensibility model. Node.js code that runs at specific points in the auth lifecycle.</td></tr>
+  <tr><td><b>Universal Login</b></td><td>Auth0-hosted login page. The app redirects to Auth0; users authenticate there and are sent back. Pizza 42 never sees credentials.</td></tr>
+  <tr><td><b>Front channel</b></td><td>Communication via browser redirects (visible in URLs). Used for auth code exchange.</td></tr>
+  <tr><td><b>Back channel</b></td><td>Server-to-server HTTP requests. Used for token exchange, JWKS fetch, Management API calls.</td></tr>
+  <tr><td><b>Refresh token rotation</b></td><td>Each refresh issues a new refresh token and invalidates the previous one. If the old one is ever reused, the entire family is revoked (breach signal).</td></tr>
+  <tr><td><b>Namespaced claim</b></td><td>Custom JWT claim with a URI-shaped name (e.g. <code>https://pizza42.com/orders</code>) so it doesn't collide with reserved OIDC claims.</td></tr>
+</table>
+
+<div class="note" style="margin-top: 0.3in;">
+<b>How to read this doc:</b> Sections 1–3 are the "what." Sections 4–5 are the "how." Sections 6–8 are the "why." Sections 9–10 are the "what makes this PoC defensible in an interview." Section 11 is your safety net for vocabulary.
+</div>
+
+</body>
+</html>
